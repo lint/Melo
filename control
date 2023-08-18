@@ -1,0 +1,8 @@
+Package: com.lint.melo
+Name: Melo
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Pin albums in the music app (again again)
+Maintainer: lint
+Author: lint
+Section: Tweaks
