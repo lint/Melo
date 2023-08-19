@@ -1,3 +1,7 @@
 .theos/
 packages/
 .DS_Store
+frida
+old
+other
+.vscode
