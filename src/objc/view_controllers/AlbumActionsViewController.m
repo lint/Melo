@@ -94,7 +94,7 @@
 
     // add shift right action if possible
     if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:_albumAdjustedIndexPath movingLeft:NO]) {
-        NSString *title = @"Shift RIGHT";
+        NSString *title = @"Shift Right";
         NSString *ident = @"MELO_ACTION_SHIFT_RIGHT";
 
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];

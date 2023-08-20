@@ -16,6 +16,30 @@
 			<key>label</key>
 			<string>Enabled</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>customNumColumnsEnabled</string>
+			<key>label</key>
+			<string>Custom number of columns</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>hideAlbumTextEnabled</string>
+			<key>label</key>
+			<string>Hide album text</string>
+		</dict>
 	</array>
 	<key>title</key>
 	<string>Melo</string>

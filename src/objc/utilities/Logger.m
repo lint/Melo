@@ -34,6 +34,12 @@ static Logger *sharedLogger;
 
     if ((self = [super init])) {
 
+        _enabled = NO;
+
+        if (!_enabled) {
+            return self;
+        }
+
         // store files in the app's Application Support directory since it is sandboxed
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
         _logFileDir = [paths firstObject];
@@ -62,6 +68,10 @@ static Logger *sharedLogger;
 
 // append a given string to the log file
 - (void)logString:(NSString *)arg1 {
+
+    if (!_enabled) {
+        return;
+    }
 
     @synchronized(_lock) {
 

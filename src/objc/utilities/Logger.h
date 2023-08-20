@@ -7,6 +7,7 @@
 @property(strong, nonatomic) NSString *logFilePath;
 @property(strong, nonatomic) NSObject *lock;
 @property(strong, nonatomic) NSString *contents;
+@property(assign, nonatomic) BOOL enabled;
 
 + (void)load;
 + (instancetype)sharedInstance;

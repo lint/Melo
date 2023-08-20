@@ -35,6 +35,9 @@ static MeloManager *sharedMeloManager;
     if ((self = [super init])) {
 
         [self loadPrefs];
+
+        _numColumns = 4;
+        _enableCustomActionMenu = YES;
     
     }
 
@@ -54,7 +57,13 @@ static MeloManager *sharedMeloManager;
 // load the saved preferences from file
 - (void)loadPrefs {
     _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
-    _defaultPrefs = @{@"enabled": @YES};
+    _defaultPrefs = @{@"enabled": @YES,
+        @"customNumColumnsEnabled": @YES,
+        @"hideAlbumTextEnabled": @YES};
+}
+
+- (CGFloat)minimumCellSpacing {
+    return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - _numColumns) / 10 * 2.5 + 5 : 20;
 }
 
 @end
