@@ -1,6 +1,7 @@
 
 #import "Section.h"
 #import "Album.h"
+#import "../utilities/utilities.h"
 
 @implementation Section
 
@@ -23,6 +24,8 @@
 
     self = [super init];
 
+    [[Logger sharedInstance] logStringWithFormat:@"Section: %p - initWithDictionary: %@", self, arg1];
+
     if (self) {
         _identifier = arg1[@"identifier"];
         _title = arg1[@"title"];
@@ -34,6 +37,7 @@
 
         for (NSDictionary *albumDict in arg1[@"albums"]) {
             Album *album = [[Album alloc] initWithDictionary:albumDict];
+            [[Logger sharedInstance] logStringWithFormat:@"adding album%@", arg1];
             [_albums addObject:album];
         }
     }

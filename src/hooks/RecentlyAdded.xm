@@ -30,6 +30,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
 %hook LibraryRecentlyAddedViewController
 %property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
+%property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
 
 - (id)init {
 
@@ -50,12 +51,46 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     %orig;
 
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewWillAppear:(%i)", self, arg1]];
-
 }
 
-- (void)setTitle:(NSString *)arg1 {
+- (void)viewDidLoad {
+    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - viewDidLoad", self];
+    %orig;
+
+
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    [[Logger sharedInstance] logStringWithFormat:@"collectionView: %p", collectionView];
+
+    UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTapOnAlbum:)];
+    tapGesture.numberOfTapsRequired = 1;
+    tapGesture.numberOfTouchesRequired = 2;
+    
+
+    for (id gesture in [collectionView gestureRecognizers]) {
+        // [[Logger sharedInstance] logStringWithFormat:@"gestureRecognizer: %@", gesture];
+
+        [gesture requireGestureRecognizerToFail:tapGesture];
+    }
+    [collectionView addGestureRecognizer:tapGesture];
+}
+
+- (void)setTitle:(NSString *)title {
+    [[Logger sharedInstance] logStringWithFormat:@"LRAVC %p - setTitle:(%@)", self, title];
 
     %orig;
+
+    NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
+
+    NSString *localizedRecentlyAddedTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
+    NSString *localizedDownloadedMusicTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_DOWNLOADED_VIEW_TITLE", @"Music", bundle, nil);
+
+    if ([title isEqualToString:localizedRecentlyAddedTitle]) {
+        [[self recentlyAddedManager] setIsDownloadedMusic:NO];
+    } else if ([title isEqualToString:localizedDownloadedMusicTitle]) {
+        [[self recentlyAddedManager] setIsDownloadedMusic:YES];
+    }
+
+    // [[self recentlyAddedManager] loadData];
 }
 
 /* methods that deal with displaying sections */
@@ -147,8 +182,18 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
 
-    // use injected data
-    return %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+    // use the injected data
+    id orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+    
+    // // add a double tap gesture recognizer to every album cell
+    // if (![orig gestureRecognizers] || [[orig gestureRecognizers] count] == 0) {
+    //     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTapOnAlbum:)];
+    //     tapGesture.numberOfTapsRequired = 2;
+        
+    //     [orig addGestureRecognizer:tapGesture];
+    // }
+
+    return orig;
 }
 
 - (id)collectionView:(UICollectionView *)arg1 contextMenuConfigurationForItemAtIndexPath:(NSIndexPath *)arg2 point:(CGPoint)arg3 {
@@ -162,7 +207,8 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         return %orig;
     }
 
-    shouldAddAlbumPinContextMenuAction = YES;
+    // shouldAddAlbumPinContextMenuAction = YES; // TODO: disabled for now
+    shouldAddAlbumPinContextMenuAction = NO;
 
     NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
     indexPathForContextActions = arg2;
@@ -206,19 +252,21 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"adjustedIndexPath:<%ld-%ld>", adjustedIndexPath.section, adjustedIndexPath.item]];
 
     // use injected data
-    // %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
+    %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
 
-    [[Logger sharedInstance] logString:@"finished willDisplayCell"];
-
-
+    // [[Logger sharedInstance] logString:@"finished willDisplayCell"];
 
 
-    if (arg3.item >= [self collectionView:MSHookIvar<UICollectionView *>(self, "_collectionView") numberOfItemsInSection:arg3.section]) {
-        // HBLogDebug(@"\tadjusted indexPath is out of bounds for pinnedSection: %ld? something probably went wrong", arg3.section);
-        [[Logger sharedInstance] logString:@"failed index path bounds check? just don't call method??"];
-    } else {
-        %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
-    }
+
+    // out of bounds check that i used in the old code
+    // if (arg3.item >= [self collectionView:MSHookIvar<UICollectionView *>(self, "_collectionView") numberOfItemsInSection:arg3.section]) {
+    //     // HBLogDebug(@"\tadjusted indexPath is out of bounds for pinnedSection: %ld? something probably went wrong", arg3.section);
+    //     [[Logger sharedInstance] logString:@"failed index path bounds check? just don't call method??"];
+    // } else {
+    //     %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
+    // }
+
+
 }
 
 - (void)collectionView:(UICollectionView *)arg1 didEndDisplayingCell:(id)arg2 forItemAtIndexPath:(NSIndexPath *)arg3 {
@@ -227,15 +275,15 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // in old code, this did not ever inject a different index path, it just called %orig, so maybe do that again here as well..
     
     // check if recently added manager is ready to inject data
-    // RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    // if (![recentlyAddedManager isReadyForUse]) {
-    //     %orig;
-    //     return;
-    // }
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    if (![recentlyAddedManager isReadyForUse]) {
+        %orig;
+        return;
+    }
 
-    // // use injected data
-    // %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
-    %orig;
+    // use injected data
+    %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
+    // %orig;
 }
 
 - (BOOL)collectionView:(UICollectionView *)arg1 shouldSelectItemAtIndexPath:(NSIndexPath *)arg2 { 
@@ -247,8 +295,25 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         return %orig;
     }
 
+    [[Logger sharedInstance] logStringWithFormat:@"realIndexPath: %@", [recentlyAddedManager translateIndexPath:arg2]];
+
     // use injected data
-    return %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+    // BOOL orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+    BOOL orig = %orig;
+    [[Logger sharedInstance] logStringWithFormat:@"result: %i", orig];
+    return orig;
+    // return YES;
+
+    // this method does not translate the paths because if it does, for some reason calling %orig with the real path causes issues with selecting an album
+    // my guess for what happens:
+    // let's say all of the albums are in the recently added section and none in the pinned section
+    // call %orig with the real index path
+    // this index path will get passed to [UICollectionView cellForItemAtIndexPath:]
+    // now the the translated / real index path has section 0, but the cellForItemAtIndexPath is going off the faked positions of the albums?
+    // so it doesn't return anything and then %orig returns NO for shouldSelectItemAtIndexPath
+    // thus, if we just pass the adjusted index path to %orig, that will get passed to the UICollectionView method, which will succeed
+    // and then it all works out
+    // my old code DOES translate the index path tho... so not sure what's different
 }
 
 - (void)collectionView:(UICollectionView *)arg1 didSelectItemAtIndexPath:(NSIndexPath *)arg2 { 
@@ -260,6 +325,8 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         %orig;
         return;
     }
+
+    [[Logger sharedInstance] logStringWithFormat:@"realIndexPath: %@", [recentlyAddedManager translateIndexPath:arg2]];
 
     // use injected data
     %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
@@ -332,7 +399,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
 %new
 - (void)handleMoveToSectionAction:(NSInteger)sectionIndex {
-    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %@ - handleMoveToSectionAction:(%ld)", self, sectionIndex];
+    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleMoveToSectionAction:(%ld)", self, sectionIndex];
 
     // ideally, if moving the album back into the recently added section, it will move it to the album's proper place
     // for now tho, i'll just move it to the first spot, then it will move back whenever the app is refreshed since the recently added section is not saved
@@ -342,15 +409,21 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     NSIndexPath *sourceAdjustedIndexPath = indexPathForContextActions;
     NSIndexPath *destAdjustedIndexPath = [NSIndexPath indexPathForItem:0 inSection:sectionIndex];
 
-    // perform the move operation
-    [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:^(){
-        [recentlyAddedManager moveAlbumAtAdjustedIndexPath:destAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
-    }];        
+    [[Logger sharedInstance] logStringWithFormat:@"indexPathForContextActions: %@", indexPathForContextActions];
+
+    // commented out so that the block does not cause a crash while patching with allemand
+    // // perform the move operation
+    // [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:^(){
+    //     [recentlyAddedManager moveAlbumAtAdjustedIndexPath:destAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
+    // }];        
+
+    [recentlyAddedManager moveAlbumAtAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
+    [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:nil]; 
 }
 
 %new 
 - (void)handleShiftAction:(BOOL)isMovingLeft {
-    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %@ - handleShiftAction:isMovingLeft:(%i)", self, isMovingLeft];
+    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleShiftAction:isMovingLeft:(%i)", self, isMovingLeft];
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
@@ -364,11 +437,14 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         destAdjustedIndexPath = [NSIndexPath indexPathForItem:indexPathForContextActions.item + 1 inSection:indexPathForContextActions.section];
     }
 
-    // perform the shift operation
-    [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:^(){
-        [recentlyAddedManager moveAlbumAtAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
-    }];
+    // commented out so that the block does not cause a crash while patching with allemand
+    // // perform the shift operation
+    // [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:^(){
+    //     [recentlyAddedManager moveAlbumAtAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
+    // }];
 
+    [recentlyAddedManager moveAlbumAtAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath];
+    [self moveAlbumCellFromAdjustedIndexPath:sourceAdjustedIndexPath toAdjustedIndexPath:destAdjustedIndexPath dataUpdateBlock:nil]; 
 }
 
 %new 
@@ -381,7 +457,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // old code first uncollapsed the destination section if it was collapsed
 
     // execute the data update
-    dataUpdateBlock();
+    // dataUpdateBlock();
 
     // old code then made source section always "visible" and preserved the state in a variable
 
@@ -391,6 +467,47 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // old code would then restore the source section's visible state 
     // and would also hide the source section if it became empty and that option was enabled
 
+}
+
+%new
+- (void)handleDoubleTapOnAlbum:(UITapGestureRecognizer *)sender {
+    [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleDoubleTapOnAlbum:(%@)", self, sender];
+
+    if (sender.state == UIGestureRecognizerStateRecognized) {
+        // handling code
+
+        [[Logger sharedInstance] logString:@"state recognized"];
+
+        RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+        UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+
+        CGPoint point = [sender locationInView:collectionView];
+        NSIndexPath *indexPath = [collectionView indexPathForItemAtPoint:point];
+
+        [[Logger sharedInstance] logStringWithFormat:@"indexPath: %@", indexPath];
+
+        Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:indexPath];
+        [[Logger sharedInstance] logStringWithFormat:@"album: %@", album];
+
+        // ActionsPresentationController *presController = [ActionsPresentationController new];
+
+        AlbumActionsViewController *albumActionsVC = [AlbumActionsViewController new];
+        albumActionsVC.libraryRecentlyAddedViewController = self;
+        albumActionsVC.recentlyAddedManager = recentlyAddedManager;
+        albumActionsVC.albumAdjustedIndexPath = indexPath;
+        indexPathForContextActions = indexPath;
+
+        albumActionsVC.modalPresentationStyle = UIModalPresentationPopover;
+        albumActionsVC.preferredContentSize = CGSizeMake(280, 230);
+        albumActionsVC.popoverPresentationController.delegate = self;
+
+        // albumActionsVC.popoverPresentationController.sourceView = self.view;
+        // albumActionsVC.popoverPresentationController.sourceRect = CGRectMake(384, -120, 280, 230);
+        [self setAlbumActionsVC:albumActionsVC];
+
+        [self presentViewController:albumActionsVC animated:YES completion:nil];
+        // [self pushViewController:albumActionsVC animated:YES];
+    }
 }
 
 
@@ -437,10 +554,10 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 // allows the context menu to pop up with the correct album without crashing
 // fairly certain this is just used to find the initial location of the selected cell when called in use of the context menu, but whatever the reason, it's necessary
 - (UICollectionViewCell *)cellForItemAtIndexPath:(NSIndexPath *)arg1 {
-    HBLogDebug(@"UICollectionView: %p cellForItemAtIndexPath: %@", self, arg1);
+    [[Logger sharedInstance] logStringWithFormat:@"UICollectionView: %p cellForItemAtIndexPath: %@", self, arg1];
 
     if (indexPathForContextMenuOverride) {
-        HBLogDebug(@"\toverriding index path to: %@", indexPathForContextMenuOverride);
+        [[Logger sharedInstance] logStringWithFormat:@"\toverriding index path to: %@", indexPathForContextMenuOverride];
         return %orig(indexPathForContextMenuOverride);
     } else {
         return %orig;
@@ -455,168 +572,168 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 %end
 
 // adding custom actions to the context menu
-%hook UIMenu
+// %hook UIMenu
 
-// not the best method to inject custom actions into, but the one i could find that works for the moment
-- (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
+// // not the best method to inject custom actions into, but the one i could find that works for the moment
+// - (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
+//     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
-    [[Logger sharedInstance] logString:@"children:"];
-    for (id child in arg1) {
-        [[Logger sharedInstance] logStringWithFormat:@"\tchild identifier: %@, child: %@", [child identifier], child];
-    }
+//     [[Logger sharedInstance] logString:@"children:"];
+//     for (id child in arg1) {
+//         [[Logger sharedInstance] logStringWithFormat:@"\tchild identifier: %@, child: %@", [child identifier], child];
+//     }
 
-    // without the identifer check, when adding actions to the bottom of the list it worked perfectly, but adding to the top would create 3 duplicate actions. why? who could know..
-    if (shouldAddAlbumPinContextMenuAction) {
+//     // without the identifer check, when adding actions to the bottom of the list it worked perfectly, but adding to the top would create 3 duplicate actions. why? who could know..
+//     if (shouldAddAlbumPinContextMenuAction) {
 
-        [[Logger sharedInstance] logStringWithFormat:@"shouldAddAlbumPinContextMenuAction: %i, indexPathForContextActions: %@", shouldAddAlbumPinContextMenuAction, indexPathForContextActions];
+//         [[Logger sharedInstance] logStringWithFormat:@"shouldAddAlbumPinContextMenuAction: %i, indexPathForContextActions: %@", shouldAddAlbumPinContextMenuAction, indexPathForContextActions];
 
-        // detect if the menu already has the injected context actions
-        BOOL containsInjectedActions = NO;
+//         // detect if the menu already has the injected context actions
+//         BOOL containsInjectedActions = NO;
 
-        // iterate over every child menu element
-        for (id child in arg1) {
+//         // iterate over every child menu element
+//         for (id child in arg1) {
 
-            // check if the child is an action and if so check its identifier prefix
-            if ([child respondsToSelector:@selector(identifier)] && [[child identifier] hasPrefix:@"MELO_ACTION"]) {
-                containsInjectedActions = YES;
-                break;
-            }
+//             // check if the child is an action and if so check its identifier prefix
+//             if ([child respondsToSelector:@selector(identifier)] && [[child identifier] hasPrefix:@"MELO_ACTION"]) {
+//                 containsInjectedActions = YES;
+//                 break;
+//             }
 
-            // if child is a submenu, check if every one of its children is an action and if so has the right prefix
-            if ([child isKindOfClass:[UIMenu class]]) {
-                for (id subchild in [child children]) {
-                    if ([subchild respondsToSelector:@selector(identifier)] && [[subchild identifier] hasPrefix:@"MELO_ACTION"]) {
-                        containsInjectedActions = YES;
-                        break;
-                    }
-                }
-            }
-        }
+//             // if child is a submenu, check if every one of its children is an action and if so has the right prefix
+//             if ([child isKindOfClass:[UIMenu class]]) {
+//                 for (id subchild in [child children]) {
+//                     if ([subchild respondsToSelector:@selector(identifier)] && [[subchild identifier] hasPrefix:@"MELO_ACTION"]) {
+//                         containsInjectedActions = YES;
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
 
-        // no injected actions were added yet, do so now
-        if (!containsInjectedActions) {
-            [[Logger sharedInstance] logString:@"no previously injected actions detected"];
+//         // no injected actions were added yet, do so now
+//         if (!containsInjectedActions) {
+//             [[Logger sharedInstance] logString:@"no previously injected actions detected"];
 
-            if (!currentLRAVC) {
-                [[Logger sharedInstance] logString:@"no current LibraryRecentlyAddedViewController, this shouldn't happen..."];
-                return %orig;
-            }
+//             if (!currentLRAVC) {
+//                 [[Logger sharedInstance] logString:@"no current LibraryRecentlyAddedViewController, this shouldn't happen..."];
+//                 return %orig;
+//             }
 
-            [[Logger sharedInstance] logString:@"here1"];
+//             [[Logger sharedInstance] logString:@"here1"];
 
-            RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
-            NSMutableArray *newActions = [NSMutableArray array];
-            // Album *targetAlbum = [recentlyAddedManager albumAtAdjustedIndexPath:indexPathForContextActions];
+//             RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
+//             NSMutableArray *newActions = [NSMutableArray array];
+//             // Album *targetAlbum = [recentlyAddedManager albumAtAdjustedIndexPath:indexPathForContextActions];
 
-            /* add the move to section action */
+//             /* add the move to section action */
 
-            // old code converts section index from 'visible' to 'data' when hiding empty sections was a thing
+//             // old code converts section index from 'visible' to 'data' when hiding empty sections was a thing
 
-            // place all move actions into a submenu
-            BOOL displayMoveActionsInline = YES; // old code had this as a setting, default to yes for now 
-            NSMutableArray *subMenuActions = [NSMutableArray array];
+//             // place all move actions into a submenu
+//             BOOL displayMoveActionsInline = YES; // old code had this as a setting, default to yes for now 
+//             NSMutableArray *subMenuActions = [NSMutableArray array];
 
-            [[Logger sharedInstance] logString:@"here2"];
-            [[Logger sharedInstance] logStringWithFormat:@"%@", recentlyAddedManager];
+//             [[Logger sharedInstance] logString:@"here2"];
+//             [[Logger sharedInstance] logStringWithFormat:@"%@", recentlyAddedManager];
 
-            // iterate over every section
-            for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
+//             // iterate over every section
+//             for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
 
-                [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
+//                 [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
                 
-                // don't have move action to current section
-                if (i == indexPathForContextActions.section) {
-                    continue;
-                }
+//                 // don't have move action to current section
+//                 if (i == indexPathForContextActions.section) {
+//                     continue;
+//                 }
 
-                Section *section = [recentlyAddedManager sectionAtIndex:i];
-                NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
-                NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
+//                 Section *section = [recentlyAddedManager sectionAtIndex:i];
+//                 NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
+//                 NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
 
-                [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
+//                 [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
 
-                // create the action
-                UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
-                    [currentLRAVC handleMoveToSectionAction:i];
-                }];
+//                 // create the action
+//                 UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
+//                     [currentLRAVC handleMoveToSectionAction:i];
+//                 }];
 
-                [subMenuActions addObject:subMenuAction];
+//                 [subMenuActions addObject:subMenuAction];
 
-                [[Logger sharedInstance] logString:@"added to submenuactions array"];
-            }
+//                 [[Logger sharedInstance] logString:@"added to submenuactions array"];
+//             }
 
-            [[Logger sharedInstance] logString:@"here3"];
+//             [[Logger sharedInstance] logString:@"here3"];
 
-            // only create the submenu if there is more than one action
-            if ([subMenuActions count] > 1) {
-                UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
-                    options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
+//             // only create the submenu if there is more than one action
+//             if ([subMenuActions count] > 1) {
+//                 UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
+//                     options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
 
-                [newActions addObject:subMenu];
-            } else if ([subMenuActions count] == 1) {
-                [newActions addObject:subMenuActions[0]];
-            }
+//                 [newActions addObject:subMenu];
+//             } else if ([subMenuActions count] == 1) {
+//                 [newActions addObject:subMenuActions[0]];
+//             }
 
-            [[Logger sharedInstance] logString:@"here4"];
+//             [[Logger sharedInstance] logString:@"here4"];
 
-            // add shift left action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
-                UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:YES];
-                }];
+//             // add shift left action if possible
+//             if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
+//                 UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
+//                     [currentLRAVC handleShiftAction:YES];
+//                 }];
 
-                [newActions addObject:shiftLeftAction];
-            }
+//                 [newActions addObject:shiftLeftAction];
+//             }
 
-            [[Logger sharedInstance] logString:@"here5"];
+//             [[Logger sharedInstance] logString:@"here5"];
 
-            // add shift right action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
-                UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:NO];
-                }];
+//             // add shift right action if possible
+//             if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
+//                 UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
+//                     [currentLRAVC handleShiftAction:NO];
+//                 }];
 
-                [newActions addObject:shiftRightAction];
-            }
+//                 [newActions addObject:shiftRightAction];
+//             }
 
-            [[Logger sharedInstance] logString:@"here6"];
+//             [[Logger sharedInstance] logString:@"here6"];
 
-            // placing all custom actions into a submenu
-            //if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
-                // UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
-                //     options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
+//             // placing all custom actions into a submenu
+//             //if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
+//                 // UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
+//                 //     options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
 
-                // newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
-            //}
+//                 // newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
+//             //}
 
-            // placing custom actions at top or bottom
-            BOOL placeMenuAtTop = YES; // old code has this done by preferences ([[apManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0)
+//             // placing custom actions at top or bottom
+//             BOOL placeMenuAtTop = YES; // old code has this done by preferences ([[apManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0)
 
-            if (placeMenuAtTop) {
-                arg1 = [newActions arrayByAddingObjectsFromArray:arg1];
-            } else {
-                arg1 = [arg1 arrayByAddingObjectsFromArray:newActions];
-            }
-        }
-    }
+//             if (placeMenuAtTop) {
+//                 arg1 = [newActions arrayByAddingObjectsFromArray:arg1];
+//             } else {
+//                 arg1 = [arg1 arrayByAddingObjectsFromArray:newActions];
+//             }
+//         }
+//     }
 
-	id orig =  %orig;
-    [[Logger sharedInstance] logStringWithFormat:@"UIMenu result: %@", orig];
-    return orig;
-}
+// 	id orig =  %orig;
+//     [[Logger sharedInstance] logStringWithFormat:@"UIMenu result: %@", orig];
+//     return orig;
+// }
 
-%end
+// %end
 
 %hook ArtworkPrefetchingController
 
 // ios 14+ needs real index paths injected here as the adjusted index paths seem to be passed during [UICollectionView layoutSubviews]
 // this fixes a crash caused by scrolling down (to the point where the injected pinned section title leaves the screen)
 - (void)collectionView:(UICollectionView *)arg1 prefetchItemsAtIndexPaths:(id)arg2 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"ArtworkPrefetchingController: %p - collectionView:(%@) prefetchItemsAtIndexPaths:(%@)", self, arg1, arg2]];
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"ArtworkPrefetchingController: %p - collectionView:(%p) prefetchItemsAtIndexPaths:(%@)", self, arg1, arg2]];
 
     // check if this instance is for the current LibraryRecentlyAddedViewController
-    if (currentLRAVC && arg1 == MSHookIvar<UICollectionView *>(currentLRAVC, "_collectionView")) {
+    if (currentLRAVC && [currentLRAVC recentlyAddedManager] && [[currentLRAVC recentlyAddedManager] isReadyForUse] && arg1 == MSHookIvar<UICollectionView *>(currentLRAVC, "_collectionView")) {
 
         // translate all adjusted index paths to their real index path
         NSMutableArray *realIndexPaths = [NSMutableArray array];

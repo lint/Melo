@@ -8,6 +8,10 @@
 @interface RecentlyAddedManager : NSObject
 @property(strong, nonatomic) NSMutableArray *sections;
 @property(assign, nonatomic) BOOL processedRealAlbumOrder;
+@property(strong, nonatomic) NSUserDefaults *defaults;
+@property(assign, nonatomic) BOOL attemptedDataLoad;
+@property(assign, nonatomic) BOOL isDownloadedMusic;
+@property(assign, nonatomic) BOOL skipLoad;
 // @property(strong, nonatomic) NSLock 
 
 - (instancetype)init;
@@ -26,5 +30,9 @@
 - (NSInteger)numberOfSections;
 - (NSInteger)numberOfAlbumsInSection:(NSInteger)arg1;
 - (NSInteger)numberOfTotalAlbums;
+- (NSInteger)sectionIndexForIdentifier:(NSString *)arg1;
+- (NSString *)userDefaultsKey;
+- (void)saveData;
+- (void)loadData;
 
 @end

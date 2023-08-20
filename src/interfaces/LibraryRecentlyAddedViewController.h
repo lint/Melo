@@ -6,6 +6,7 @@
 
 // custom properties
 @property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
+@property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
 
 // custom methods
 - (void)checkAlbumOrder;
