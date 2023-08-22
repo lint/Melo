@@ -5,8 +5,7 @@
 @interface MeloManager : NSObject
 @property(strong, nonatomic) NSDictionary *prefs;
 @property(strong, nonatomic) NSDictionary *defaultPrefs;
-@property(assign, nonatomic) NSInteger numColumns;
-@property(assign, nonatomic) BOOL enableCustomActionMenu;
+@property(strong, nonatomic) NSUserDefaults *defaults;
 
 + (void)load;
 + (instancetype)sharedInstance;
@@ -17,5 +16,6 @@
 - (id)prefsObjectForKey:(NSString *)arg1;
 
 - (CGFloat)minimumCellSpacing;
+- (void)checkClearPins;
 
 @end

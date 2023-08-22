@@ -1,5 +1,6 @@
 
 #import "MeloManager.h"
+#import "../utilities/utilities.h"
 
 static MeloManager *sharedMeloManager;
 
@@ -35,10 +36,9 @@ static MeloManager *sharedMeloManager;
     if ((self = [super init])) {
 
         [self loadPrefs];
+        _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
 
-        _numColumns = 4;
-        _enableCustomActionMenu = YES;
-    
+        [self checkClearPins];
     }
 
     return self;
@@ -59,11 +59,45 @@ static MeloManager *sharedMeloManager;
     _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
     _defaultPrefs = @{@"enabled": @YES,
         @"customNumColumnsEnabled": @YES,
-        @"hideAlbumTextEnabled": @YES};
+        @"customNumColumns": @4,
+        @"customAlbumCellCornerRadiusEnabled": @NO,
+        @"customAlbumCellCornerRadius": @0,
+        @"hideAlbumTextEnabled": @YES,
+        @"removeAlbumLimitEnabled": @YES,
+        @"customActionMenuEnabled":@YES,
+        @"loggingEnabled": @NO
+        };
 }
 
 - (CGFloat)minimumCellSpacing {
-    return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - _numColumns) / 10 * 2.5 + 5 : 20;
+    NSInteger numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
+    return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - numColumns) / 10 * 2.5 + 5 : 20;
+}
+
+- (void)checkClearPins {
+
+    [[Logger sharedInstance] logString:@"MeloManager checkClearPins"];
+
+    NSString *clearPinsKey = @"MELO_CLEAR_PINS_KEY";
+    NSString *savedID = [_defaults objectForKey:clearPinsKey];
+    NSString *prefsID = [self prefsObjectForKey:clearPinsKey];
+
+    [[Logger sharedInstance] logStringWithFormat:@"savedClearPinsID: %@, preferencesClearPinsID: %@", savedID, prefsID];
+
+    // check if the preference clear pins key has changed
+    BOOL shouldClearPins = ((prefsID && !savedID) || (prefsID && savedID && ![prefsID isEqualToString:savedID]));
+    if (!shouldClearPins) {
+        return;
+    }
+
+    [[Logger sharedInstance] logString:@"new clear pins id detected, will remove saved data"];
+
+    // clear the saved data
+    [_defaults setObject:nil forKey:@"MELO_DATA_DOWNLOADED"];
+    [_defaults setObject:nil forKey:@"MELO_DATA_LIBRARY"];
+
+    // save the clear pins id from preferences 
+    [_defaults setObject:prefsID forKey:clearPinsKey];
 }
 
 @end

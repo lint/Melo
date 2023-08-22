@@ -1,5 +1,6 @@
 
 #import "Logger.h"
+#import "../managers/managers.h"
 
 static Logger *sharedLogger;
 
@@ -34,7 +35,15 @@ static Logger *sharedLogger;
 
     if ((self = [super init])) {
 
-        _enabled = NO;
+        // _enabled = [[MeloManager sharedInstance] prefsBoolForKey:@"loggingEnabled"];
+        NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
+        id enabledVal = [prefs objectForKey:@"loggingEnabled"];
+
+        if (enabledVal) {
+            _enabled = [enabledVal boolValue];
+        } else {
+            _enabled = YES;
+        }
 
         if (!_enabled) {
             return self;

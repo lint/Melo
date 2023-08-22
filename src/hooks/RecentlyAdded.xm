@@ -16,7 +16,7 @@ BOOL shouldAddAlbumPinContextMenuAction = NO;
     [[Logger sharedInstance] logStringWithFormat:@"MPModelLibraryRequest: %p - setContentRange: %@", self, arg1];
     [[Logger sharedInstance] logStringWithFormat:@"length: %li", (long)arg1.length];
 
-    arg1.length = 1000;
+    arg1.length = 10000;
 
     %orig;
 }
@@ -41,8 +41,7 @@ BOOL shouldAddAlbumPinContextMenuAction = NO;
 
         if ([meloManager prefsBoolForKey:@"customNumColumnsEnabled"]) {
 
-            // NSInteger numColumns = [[meloManager prefsObjectForKey:@"customNumColumns"] integerValue];
-            NSInteger numColumns = [meloManager numColumns];
+            NSInteger numColumns = [[meloManager prefsObjectForKey:@"customNumColumns"] integerValue];
             NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
 
             float albumWidth = floor((screenWidth - 20 * 2 - [meloManager minimumCellSpacing] * (numColumns - 1)) / numColumns);
@@ -108,7 +107,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - viewDidLoad", self];
     %orig;
 
-    if ([[MeloManager sharedInstance] enableCustomActionMenu]) {
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"customActionMenuEnabled"]) {
         
         UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
         [[Logger sharedInstance] logStringWithFormat:@"collectionView: %p", collectionView];
@@ -340,8 +339,8 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     }
 
     // use injected data
-    %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
-    // %orig;
+    // %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
+    %orig;
 }
 
 - (BOOL)collectionView:(UICollectionView *)arg1 shouldSelectItemAtIndexPath:(NSIndexPath *)arg2 { 
@@ -644,7 +643,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 - (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
-    if ([[MeloManager sharedInstance] enableCustomActionMenu]) {
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"customActionMenuEnabled"]) {
         return %orig;
     }
 
@@ -819,6 +818,32 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
 %end
 
+%hook AlbumCell
+
+- (void)layoutSubviews {
+    %orig;
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    id dataSource = [[self _collectionView] dataSource];
+    // BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")] || ([apManager prefsBoolForKey:@"affectAlbumsPagesEnabled"] && ([dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || [dataSource isKindOfClass:objc_getClass("MusicApplication.ArtistViewController")]));
+    BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")];
+    shouldChangeCornerRadius = shouldChangeCornerRadius && [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
+
+    if (shouldChangeCornerRadius) {
+
+        CGFloat radius = [[meloManager prefsObjectForKey:@"customAlbumCellCornerRadius"] floatValue] / 100 * [self frame].size.width;
+
+        UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
+
+        [artworkView setClipsToBounds:YES];
+        [[artworkView layer] setCornerRadius:radius];
+        //[[self layer] setContinuousCorners:YES];
+    }
+}
+
+%end
+
 %ctor {
 
     MeloManager *meloManager = [MeloManager sharedInstance];
@@ -826,6 +851,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     if ([meloManager prefsBoolForKey:@"enabled"]) {
         %init(LibraryRecentlyAddedViewController = objc_getClass("MusicApplication.LibraryRecentlyAddedViewController"), 
             TitleSectionHeaderView = objc_getClass("MusicApplication.TitleSectionHeaderView"),
-            ArtworkPrefetchingController = objc_getClass("MusicApplication.ArtworkPrefetchingController"));
+            ArtworkPrefetchingController = objc_getClass("MusicApplication.ArtworkPrefetchingController"),
+            AlbumCell = objc_getClass("MusicApplication.AlbumCell"));
     }
 }

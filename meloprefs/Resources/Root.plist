@@ -6,6 +6,14 @@
 	<array>
 		<dict>
 			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Enabled</string>
+			<key>footerText</key>
+			<string>Restart the Music app to enable/disable (TODO: other settings will be applied immediately)</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
@@ -18,6 +26,26 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Layout</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>removeAlbumLimitEnabled</string>
+			<key>label</key>
+			<string>Remove Album Limit</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
 			<true/>
@@ -26,7 +54,29 @@
 			<key>key</key>
 			<string>customNumColumnsEnabled</string>
 			<key>label</key>
-			<string>Custom number of columns</string>
+			<string>Custom Number of Columns</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>4</integer>
+			<key>min</key>
+			<integer>1</integer>
+			<key>max</key>
+			<integer>10</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customNumColumns</string>
+			<key>label</key>
+			<string>Num Columns</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -38,8 +88,87 @@
 			<key>key</key>
 			<string>hideAlbumTextEnabled</string>
 			<key>label</key>
-			<string>Hide album text</string>
+			<string>Hide Album Artist and Title</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>customAlbumCellCornerRadiusEnabled</string>
+			<key>label</key>
+			<string>Custom Album Cell Corner Radius</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>min</key>
+			<integer>0</integer>
+			<key>max</key>
+			<integer>50</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customAlbumCellCornerRadius</string>
+			<key>label</key>
+			<string>Radius %</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Other</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Clear Saved Pins</string>
+			<key>action</key>
+			<string>clearPins</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Developer</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>customActionMenuEnabled</string>
+			<key>label</key>
+			<string>Enable Custom Action Menu</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>loggingEnabled</string>
+			<key>label</key>
+			<string>Enable Logging</string>
+		</dict>
+
 	</array>
 	<key>title</key>
 	<string>Melo</string>

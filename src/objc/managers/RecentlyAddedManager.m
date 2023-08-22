@@ -51,13 +51,9 @@
 - (NSArray *)recreateRealAlbumOrder {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager:%p - recreateAlbumOrder", self];
 
-
-
     NSInteger numberOfTotalAlbums = [self numberOfTotalAlbums];
     [[Logger sharedInstance] logStringWithFormat:@"numberOfTotalAlbums: %li", numberOfTotalAlbums];
     NSMutableArray *realAlbumOrder = [NSMutableArray arrayWithCapacity:numberOfTotalAlbums];
-
-    [[Logger sharedInstance] logString:@"here1a"];
 
     // albums will not be inserted properly if attempting to recreate the original order before data has been processed 
     if (_processedRealAlbumOrder) {

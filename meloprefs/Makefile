@@ -4,7 +4,7 @@ include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = MeloPrefs
 
-MeloPrefs_FILES = MELORootListController.m
+MeloPrefs_FILES = $(wildcard *.m)
 MeloPrefs_FRAMEWORKS = UIKit
 MeloPrefs_PRIVATE_FRAMEWORKS = Preferences
 MeloPrefs_INSTALL_PATH = /Library/PreferenceBundles

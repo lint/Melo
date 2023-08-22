@@ -13,6 +13,8 @@
 + (instancetype)sharedInstance;
 - (instancetype)init;
 
+- (void)checkEnabled;
+
 - (void)logString:(NSString *)arg1;
 - (void)logStringWithFormat:(NSString *)arg1, ...;
 
