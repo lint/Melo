@@ -128,10 +128,46 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Context Menu Actions</string>
+			<string>Downloaded Music</string>
 			<key>footerText</key>
 			<string></string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>downloadedPinningEnabled</string>
+			<key>label</key>
+			<string>Enable Pinning</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>syncLibraryPinsEnabled</string>
+			<key>label</key>
+			<string>Sync Pins From Full Library</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Context Menu Actions</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>		
 		<dict>
 			<key>cell</key>
 			<string>PSSegmentCell</string>

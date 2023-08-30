@@ -3,6 +3,7 @@
 #import "HBLog.h"
 #import "../reflection/reflection.h"
 #import "../utilities/utilities.h"
+#import "MeloManager.h"
 
 // should i synchronize access to the albums array with a mutex?
 
@@ -26,7 +27,11 @@
         [_sections addObject:[Section emptyPinnedSection]];
         [_sections addObject:[Section emptyRecentSection]];
 
-        [self loadData];
+        [[MeloManager sharedInstance] addRecentlyAddedManager:self];
+
+        _prefsDownloadedMusicEnabled = [[MeloManager sharedInstance] prefsBoolForKey:@"downloadedPinningEnabled"];
+
+        // [self loadData];
     }
 
     return self;
@@ -43,6 +48,11 @@
 
 // determine if data is ready to be injected
 - (BOOL)isReadyForUse {
+
+    if (_isDownloadedMusic && !_prefsDownloadedMusicEnabled) {
+        return NO;
+    }
+
     return _processedRealAlbumOrder && _attemptedDataLoad;
     // return _processedRealAlbumOrder;
 }
@@ -130,37 +140,64 @@
                 [self removeAlbumWithIdentifier:albumID];
             }
         }
+        // [[Logger sharedInstance] logStringWithFormat:@"%ld", [_sections count]];
 
-        [[Logger sharedInstance] logString:@"here1"];
-        [[Logger sharedInstance] logStringWithFormat:@"%ld", [_sections count]];
-
+        // remove all non pinned albums 
         Section *recentSection = [self recentSection];
+        [recentSection removeAllAlbums];
+
+        NSArray *pinnedAlbums = [self pinnedAlbums];
         int count = 0;
 
-        [[Logger sharedInstance] logString:@"here2"];
-
-        // check every album in the new album order
         for (Album *album in realAlbumOrder) {
-            
-            // add any new albums to the recently added section
-            if (![recreatedAlbumIdentOrder containsObject:album.identifier]) {
-                [[Logger sharedInstance] logString:[NSString stringWithFormat:@"add new album to recent section: %@", [album identifier]]];
 
-                
-                // [_sections[0] addAlbum:album];
-                // if (count++ == 0 || count == 6) {
-                //     [_sections[0] addAlbum:album];
-                // } else {
-                    [recentSection addAlbum:album];
-                // }
+            BOOL foundMatch = NO;
+            
+            // see if the given album is a pinned album
+            for (Album *pinnedAlbum in pinnedAlbums) {
+                if ([album.identifier isEqualToString:pinnedAlbum.identifier]) {
+
+                    [[Logger sharedInstance] logStringWithFormat:@"matched album in pinned section, album ident: %@", [album identifier]];
+
+                    // update the pinned album object
+                    pinnedAlbum.artist = album.artist;
+                    pinnedAlbum.title = album.title;
+                    pinnedAlbum.realIndex = album.realIndex;
+
+                    foundMatch = YES;
+                    break;
+                }
             }
 
-            // update any existing album information that might have changed
-            Album *originalAlbum = [self albumWithIdentifier:album.identifier];
-            originalAlbum.artist = album.artist;
-            originalAlbum.title = album.title;
-            originalAlbum.realIndex = album.realIndex;
+            // add any non pinned album to the recent section in the real order
+            if (!foundMatch) {
+                [[Logger sharedInstance] logStringWithFormat:@"adding album to recently added section, album ident: %@", [album identifier]];
+                [recentSection addAlbum:album];
+            }
         }
+
+        // check every album in the new album order
+        // for (Album *album in realAlbumOrder) {
+            
+        //     // add any new albums to the recently added section
+        //     if (![recreatedAlbumIdentOrder containsObject:album.identifier]) {
+        //         [[Logger sharedInstance] logString:[NSString stringWithFormat:@"add new album to recent section: %@", [album identifier]]];
+
+                
+        //         // [_sections[0] addAlbum:album];
+        //         // if (count++ == 0 || count == 6) {
+        //         //     [_sections[0] addAlbum:album];
+        //         // } else {
+        //             [recentSection addAlbum:album];
+        //         // }
+        //     }
+
+        //     // update any existing album information that might have changed
+        //     Album *originalAlbum = [self albumWithIdentifier:album.identifier];
+        //     originalAlbum.artist = album.artist;
+        //     originalAlbum.title = album.title;
+        //     originalAlbum.realIndex = album.realIndex;
+        // }
     }
 
     _processedRealAlbumOrder = YES;
@@ -212,6 +249,8 @@
 
     // [self checkSectionVisibility];
     [self saveData];
+
+    [[MeloManager sharedInstance] dataChangeOccurred:self];
 }
 
 // removes an album with the given identifier from its section
@@ -242,6 +281,21 @@
 - (Album *)albumAtAdjustedIndexPath:(NSIndexPath *)arg1 {
     Section *section = [self sectionAtIndex:arg1.section];
     return [section albumAtIndex:arg1.item];
+}
+
+// returns an array of all pinned albums
+- (NSArray *)pinnedAlbums {
+
+    NSMutableArray *albums = [NSMutableArray array];
+
+    // iterate over every section except for the recent section (last in the array)
+    for (NSInteger i = 0; i < [self numberOfSections] - 1; i++) {
+        Section *section = [self sectionAtIndex:i];
+
+        albums = [albums arrayByAddingObjectsFromArray:[section albums]];
+    }
+
+    return albums;
 }
 
 // return the section at the given index
@@ -305,6 +359,7 @@
 // save the current section data to user defaults
 - (void)saveData {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager: %p - saveData", self];
+    [[Logger sharedInstance] logStringWithFormat:@"user defaults key: %@", [self userDefaultsKey]];
 
     NSMutableArray *data = [NSMutableArray array];
 
@@ -321,6 +376,7 @@
 // load section data from user defaults
 - (void)loadData {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager: %p - loadData", self];
+    [[Logger sharedInstance] logStringWithFormat:@"user defaults key: %@", [self userDefaultsKey]];
 
     // clear any current data
     if (!_skipLoad) {
@@ -328,8 +384,14 @@
         _sections = [NSMutableArray array];
         _processedRealAlbumOrder = NO;
 
+        NSString *userDefaultsKey = [self userDefaultsKey];
+
+        if ([[MeloManager sharedInstance] prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
+            userDefaultsKey = @"MELO_DATA_LIBRARY";
+        }
+
         // load the data from user defaults
-        NSMutableArray *data = [_defaults objectForKey:[self userDefaultsKey]];
+        NSMutableArray *data = [_defaults objectForKey:userDefaultsKey];
 
         [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 

@@ -27,10 +27,11 @@
     // self.preferredContentSize = CGSizeMake(screenWidth, screenHeight / 2);
     // [self setPreferredContentSize:CGSizeMake(screenWidth, screenHeight / 2)];
 
+
     [super viewDidLoad];
 
     [[Logger sharedInstance] logString:@"AlbumActionsViewController - viewDidLoad"];
-
+    
     UIView *view = [self view];
 
     // CGRect backgroundFrame = CGRectMake(view.frame.origin.x, view.frame.size.height / 2, view.frame.size.width, view.frame.size.height / 2);

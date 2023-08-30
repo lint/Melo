@@ -12,6 +12,8 @@
 @property(assign, nonatomic) BOOL attemptedDataLoad;
 @property(assign, nonatomic) BOOL isDownloadedMusic;
 @property(assign, nonatomic) BOOL skipLoad;
+@property(assign, nonatomic) BOOL unhandledDataChangeOccurred;
+@property(assign, nonatomic) BOOL prefsDownloadedMusicEnabled;
 // @property(strong, nonatomic) NSLock 
 
 - (instancetype)init;
@@ -26,6 +28,7 @@
 - (Section *)sectionAtIndex:(NSInteger)arg1;
 - (Album *)albumWithIdentifier:(NSString *)arg1;
 - (Album *)albumAtAdjustedIndexPath:(NSIndexPath *)arg1;
+- (NSArray *)pinnedAlbums;
 - (void)removeAlbumWithIdentifier:(NSString *)arg1;
 - (NSInteger)numberOfSections;
 - (NSInteger)numberOfAlbumsInSection:(NSInteger)arg1;
@@ -34,5 +37,6 @@
 - (NSString *)userDefaultsKey;
 - (void)saveData;
 - (void)loadData;
+
 
 @end

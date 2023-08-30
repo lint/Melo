@@ -1,5 +1,6 @@
 
 #import "MeloManager.h"
+#import "RecentlyAddedManager.h"
 #import "../utilities/utilities.h"
 
 static MeloManager *sharedMeloManager;
@@ -37,6 +38,7 @@ static MeloManager *sharedMeloManager;
 
         [self loadPrefs];
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
+        _recentlyAddedManagers = [NSMutableArray array];
 
         [self checkClearPins];
     }
@@ -57,7 +59,8 @@ static MeloManager *sharedMeloManager;
 // load the saved preferences from file
 - (void)loadPrefs {
     _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
-    _defaultPrefs = @{@"enabled": @YES,
+    _defaultPrefs = @{
+        @"enabled": @YES,
         @"customNumColumnsEnabled": @YES,
         @"customNumColumns": @4,
         @"customAlbumCellCornerRadiusEnabled": @NO,
@@ -69,7 +72,9 @@ static MeloManager *sharedMeloManager;
         @"contextActionsLocationValue": @1, 
         @"allActionsInSubmenuEnabled": @NO,
         @"showMoveActionsEnabled": @YES,
-        @"showShiftActionsEnabled": @YES
+        @"showShiftActionsEnabled": @YES,
+        @"downloadedPinningEnabled": @NO,
+        @"syncLibraryPinsEnabled":@NO
         };
 }
 
@@ -104,4 +109,18 @@ static MeloManager *sharedMeloManager;
     [_defaults setObject:prefsID forKey:clearPinsKey];
 }
 
+- (void)dataChangeOccurred:(RecentlyAddedManager *)sender {
+    for (RecentlyAddedManager *recentlyAddedManager in _recentlyAddedManagers) {
+
+        if (recentlyAddedManager != sender && ([self prefsBoolForKey:@"syncLibraryPinsEnabled"] || recentlyAddedManager.isDownloadedMusic == sender.isDownloadedMusic)) {
+            recentlyAddedManager.unhandledDataChangeOccurred = YES;
+        }
+    }
+}
+
+- (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1 {
+    if (![_recentlyAddedManagers containsObject:arg1]) {
+        [_recentlyAddedManagers addObject:arg1];
+    }
+}
 @end

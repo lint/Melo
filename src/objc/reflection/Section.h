@@ -23,6 +23,7 @@
 - (void)removeAlbum:(Album *)arg1;
 - (void)removeAlbumAtIndex:(NSInteger)arg1;
 - (BOOL)removeAlbumWithIdentifier:(NSString *)arg1;
+- (void)removeAllAlbums;
 - (void)addAlbum:(Album *)arg1;
 - (void)insertAlbum:(Album *)arg1 atIndex:(NSInteger)arg2;
 - (void)swapAlbumAtIndex:(NSInteger)arg1 withAlbumAtIndex:(NSInteger)arg2;

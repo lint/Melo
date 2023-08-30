@@ -80,6 +80,7 @@
 
 // returns the album with the given identifier in the section
 - (Album *)albumWithIdentifier:(NSString *)arg1 {
+    
     for (Album *album in _albums) {
         if ([album.identifier isEqualToString:arg1]) {
             return album;
@@ -110,6 +111,11 @@
     }
 
     return NO;
+}
+
+// removes all albums in the section
+- (void)removeAllAlbums {
+    _albums = [NSMutableArray array];
 }
 
 // add a given album to the end of the section
