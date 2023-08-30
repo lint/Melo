@@ -643,7 +643,9 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 - (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
-    if ([[MeloManager sharedInstance] prefsBoolForKey:@"customActionMenuEnabled"]) {
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    if ([meloManager prefsBoolForKey:@"customActionMenuEnabled"]) {
         return %orig;
     }
 
@@ -703,81 +705,76 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
             BOOL displayMoveActionsInline = YES; // old code had this as a setting, default to yes for now 
             NSMutableArray *subMenuActions = [NSMutableArray array];
 
-            [[Logger sharedInstance] logString:@"here2"];
-            [[Logger sharedInstance] logStringWithFormat:@"%@", recentlyAddedManager];
+            if ([meloManager prefsBoolForKey:@"showMoveActionsEnabled"]) {
 
-            // iterate over every section
-            for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
+                // iterate over every section
+                for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
 
-                [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
-                
-                // don't have move action to current section
-                if (i == indexPathForContextActions.section) {
-                    continue;
+                    [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
+                    
+                    // don't have move action to current section
+                    if (i == indexPathForContextActions.section) {
+                        continue;
+                    }
+
+                    Section *section = [recentlyAddedManager sectionAtIndex:i];
+                    NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
+                    NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
+
+                    [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
+
+                    // create the action
+                    UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
+                        [currentLRAVC handleMoveToSectionAction:i];
+                    }];
+
+                    [subMenuActions addObject:subMenuAction];
+
+                    [[Logger sharedInstance] logString:@"added to submenuactions array"];
                 }
 
-                Section *section = [recentlyAddedManager sectionAtIndex:i];
-                NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
-                NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
+                // only create the submenu if there is more than one action
+                if ([subMenuActions count] > 1) {
+                    UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
+                        options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
 
-                [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
-
-                // create the action
-                UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
-                    [currentLRAVC handleMoveToSectionAction:i];
-                }];
-
-                [subMenuActions addObject:subMenuAction];
-
-                [[Logger sharedInstance] logString:@"added to submenuactions array"];
+                    [newActions addObject:subMenu];
+                } else if ([subMenuActions count] == 1) {
+                    [newActions addObject:subMenuActions[0]];
+                }
             }
 
-            [[Logger sharedInstance] logString:@"here3"];
+            if ([meloManager prefsBoolForKey:@"showShiftActionsEnabled"]) {
 
-            // only create the submenu if there is more than one action
-            if ([subMenuActions count] > 1) {
-                UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
-                    options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
+                // add shift left action if possible
+                if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
+                    UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
+                        [currentLRAVC handleShiftAction:YES];
+                    }];
 
-                [newActions addObject:subMenu];
-            } else if ([subMenuActions count] == 1) {
-                [newActions addObject:subMenuActions[0]];
+                    [newActions addObject:shiftLeftAction];
+                }
+
+                // add shift right action if possible
+                if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
+                    UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
+                        [currentLRAVC handleShiftAction:NO];
+                    }];
+
+                    [newActions addObject:shiftRightAction];
+                }
             }
-
-            [[Logger sharedInstance] logString:@"here4"];
-
-            // add shift left action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
-                UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:YES];
-                }];
-
-                [newActions addObject:shiftLeftAction];
-            }
-
-            [[Logger sharedInstance] logString:@"here5"];
-
-            // add shift right action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
-                UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:NO];
-                }];
-
-                [newActions addObject:shiftRightAction];
-            }
-
-            [[Logger sharedInstance] logString:@"here6"];
 
             // placing all custom actions into a submenu
-            //if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
-                // UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
-                //     options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
+            if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
+                UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
+                    options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
 
-                // newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
-            //}
+                newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
+            }
 
             // placing custom actions at top or bottom
-            BOOL placeMenuAtTop = YES; // old code has this done by preferences ([[apManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0)
+            BOOL placeMenuAtTop = [[meloManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0;
 
             if (placeMenuAtTop) {
                 arg1 = [newActions arrayByAddingObjectsFromArray:arg1];

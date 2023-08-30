@@ -65,7 +65,11 @@ static MeloManager *sharedMeloManager;
         @"hideAlbumTextEnabled": @YES,
         @"removeAlbumLimitEnabled": @YES,
         @"customActionMenuEnabled":@YES,
-        @"loggingEnabled": @NO
+        @"loggingEnabled": @NO,
+        @"contextActionsLocationValue": @1, 
+        @"allActionsInSubmenuEnabled": @NO,
+        @"showMoveActionsEnabled": @YES,
+        @"showShiftActionsEnabled": @YES
         };
 }
 
