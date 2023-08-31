@@ -109,8 +109,8 @@ static MeloManager *sharedMeloManager;
     // clear the saved data
     [_defaults setObject:nil forKey:@"MELO_DATA_DOWNLOADED"];
     [_defaults setObject:nil forKey:@"MELO_DATA_LIBRARY"];
-
-    // TODO: remember to add custom sections here
+    [_defaults setObject:nil forKey:@"MELO_DATA_DOWNLOADED_CUSTOM_SECTIONS"];
+    [_defaults setObject:nil forKey:@"MELO_DATA_LIBRARY_CUSTOM_SECTIONS"];
 
     // save the clear pins id from preferences 
     [_defaults setObject:prefsID forKey:clearPinsKey];

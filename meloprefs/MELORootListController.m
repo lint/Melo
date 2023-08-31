@@ -3,6 +3,8 @@
 #import <Preferences/PSSliderTableCell.h>
 #import <Preferences/PSSwitchTableCell.h>
 #import <Preferences/PreferencesAppController.h>
+#import <rootless.h>
+#import <NSTask.h>
 
 @implementation MELORootListController
 
@@ -91,6 +93,10 @@
 
 - (void)killMusic {
 
+	NSTask *t = [[NSTask alloc] init];
+    [t setLaunchPath:ROOT_PATH_NS(@"/usr/bin/killall")];
+    [t setArguments:[NSArray arrayWithObjects:@"-9", @"Music", nil]];
+    [t launch];
 }
 
 - (void)clearPins {
