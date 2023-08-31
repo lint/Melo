@@ -69,8 +69,9 @@
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self action:@selector(handleButtonPress:) forControlEvents:UIControlEventTouchUpInside];
         [button setTitle:title forState:UIControlStateNormal];
-        button.backgroundColor = [UIColor redColor];
+        button.backgroundColor = [UIColor systemPinkColor];
         button.frame = CGRectMake(20, currButtonYOrigin, buttonWidth, buttonHeight);
+        button.layer.cornerRadius = 10;
         currButtonYOrigin += buttonOffset;
         [view addSubview:button];
 
@@ -85,8 +86,9 @@
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self action:@selector(handleButtonPress:) forControlEvents:UIControlEventTouchUpInside];
         [button setTitle:title forState:UIControlStateNormal];
-        button.backgroundColor = [UIColor redColor];
+        button.backgroundColor = [UIColor systemPinkColor];
         button.frame = CGRectMake(20, currButtonYOrigin, buttonWidth, buttonHeight);
+        button.layer.cornerRadius = 10;
         currButtonYOrigin += buttonOffset;
         [view addSubview:button];
 
@@ -101,8 +103,9 @@
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self action:@selector(handleButtonPress:) forControlEvents:UIControlEventTouchUpInside];
         [button setTitle:title forState:UIControlStateNormal];
-        button.backgroundColor = [UIColor redColor];
+        button.backgroundColor = [UIColor systemPinkColor];
         button.frame = CGRectMake(20, currButtonYOrigin, buttonWidth, buttonHeight);
+        button.layer.cornerRadius = 10;
         currButtonYOrigin += buttonOffset;
         [view addSubview:button];
 
