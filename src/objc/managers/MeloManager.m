@@ -74,7 +74,8 @@ static MeloManager *sharedMeloManager;
         @"showMoveActionsEnabled": @YES,
         @"showShiftActionsEnabled": @YES,
         @"downloadedPinningEnabled": @NO,
-        @"syncLibraryPinsEnabled":@NO
+        @"syncLibraryPinsEnabled":@NO,
+        @"customSectionsEnabled": @NO
         };
 }
 
@@ -105,10 +106,13 @@ static MeloManager *sharedMeloManager;
     [_defaults setObject:nil forKey:@"MELO_DATA_DOWNLOADED"];
     [_defaults setObject:nil forKey:@"MELO_DATA_LIBRARY"];
 
+    // TODO: remember to add custom sections here
+
     // save the clear pins id from preferences 
     [_defaults setObject:prefsID forKey:clearPinsKey];
 }
 
+// inform other recently added managers if one of them made a change to the album order
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender {
     for (RecentlyAddedManager *recentlyAddedManager in _recentlyAddedManagers) {
 
@@ -118,9 +122,11 @@ static MeloManager *sharedMeloManager;
     }
 }
 
+// add a recently added manager to the array
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1 {
     if (![_recentlyAddedManagers containsObject:arg1]) {
         [_recentlyAddedManagers addObject:arg1];
     }
 }
+
 @end

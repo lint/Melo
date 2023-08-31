@@ -345,15 +345,22 @@
     return -1;
 }
 
-
 // returns the data key to load from user defaults
 - (NSString *)userDefaultsKey {
 
+    NSString *key;
+
     if (_isDownloadedMusic) {
-        return @"MELO_DATA_DOWNLOADED";
+        key = @"MELO_DATA_DOWNLOADED";
     } else {
-        return @"MELO_DATA_LIBRARY";
+        key = @"MELO_DATA_LIBRARY";
     }
+
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"customSectionsEnabled"]) {
+        key = [key stringByAppendingString:@"_CUSTOM_SECTIONS"];
+    }
+
+    return key;
 }
 
 // save the current section data to user defaults
@@ -379,7 +386,7 @@
     [[Logger sharedInstance] logStringWithFormat:@"user defaults key: %@", [self userDefaultsKey]];
 
     // clear any current data
-    if (!_skipLoad) {
+    // if (!_skipLoad) {
 
         _sections = [NSMutableArray array];
         _processedRealAlbumOrder = NO;
@@ -388,6 +395,10 @@
 
         if ([[MeloManager sharedInstance] prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
             userDefaultsKey = @"MELO_DATA_LIBRARY";
+
+            if ([[MeloManager sharedInstance] prefsBoolForKey:@"customSectionsEnabled"]) {
+                userDefaultsKey = [userDefaultsKey stringByAppendingString:@"_CUSTOM_SECTIONS"];
+            }
         }
 
         // load the data from user defaults
@@ -395,27 +406,87 @@
 
         [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 
-        // create section and album objects
-        if (data) {
+        if ([[MeloManager sharedInstance] prefsBoolForKey:@"customSectionsEnabled"]) {
 
-            // create section object for every loaded dictioanry
-            for (int i = 0; i < [data count]; i++) {
-                Section *section = [[Section alloc] initWithDictionary:data[i]];
-                [_sections addObject:section];
+            [[Logger sharedInstance] logString:@"custom sections are enabled"];
+
+            NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
+            NSMutableArray *defaultsSections = [NSMutableArray array];
+            NSMutableArray *finalSections = [NSMutableArray array];
+
+            if (data) {
+                // create section object for every loaded dictioanry
+                for (NSInteger i = 0; i < [data count]; i++) {
+                    Section *section = [[Section alloc] initWithDictionary:data[i]];
+                    [defaultsSections addObject:section];
+                }
             }
 
-            // create empty recent section
-            Section *recentSection = [Section emptyRecentSection];
-            [_sections addObject:recentSection];
+            for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
+
+                NSDictionary *sectionInfo = customSectionsInfoFromPrefs[i];
+                BOOL foundSection = NO;
+                
+                for (Section *section in defaultsSections) {
+                    if ([section.identifier isEqualToString:sectionInfo[@"identifier"]]) {
+                        section.title = sectionInfo[@"title"];
+                        section.subtitle = sectionInfo[@"subtitle"];
+
+                        [finalSections addObject:section];
+                        foundSection = YES;
+                        break;
+                    }
+                }
+
+                if (!foundSection) {
+                    Section *section = [[Section alloc] initWithDictionary:sectionInfo];
+                    [finalSections addObject:section];
+                }
+            }
+
+            [finalSections addObject:[Section emptyRecentSection]];
+            _sections = finalSections;
+
         } else {
 
-            // adding two sections for now...
-            [_sections addObject:[Section emptyPinnedSection]];
-            [_sections addObject:[Section emptyRecentSection]];
+            [[Logger sharedInstance] logString:@"custom sections are disabled"];
+
+            // create section and album objects
+            if (data) {
+
+                // create section object for every loaded dictioanry
+                for (int i = 0; i < [data count]; i++) {
+                    Section *section = [[Section alloc] initWithDictionary:data[i]];
+                    [_sections addObject:section];
+                }
+
+                // create empty recent section
+                Section *recentSection = [Section emptyRecentSection];
+                [_sections addObject:recentSection];
+            } else {
+
+                // adding two sections for now...
+                [_sections addObject:[Section emptyPinnedSection]];
+                [_sections addObject:[Section emptyRecentSection]];
+            }
         }
-    }
+
+        
+    // }
+
+    // first check if custom sections is enabled
+    // if not, do what you did above
+    // oooo how should I deal with saving and loading and switching between modes...
+    // i think i want to save both
+    // soo add another suffix to the user defaults key when custom sections is enabled
+    // anyway, if custom sections is enabled, load the list of sections from the prefs
+    // load the saved albums and sections from user defaults
+    // remove any sections that do not appear in the prefs list and also reorder them to match prefs list
+    // this can be done by iterating thru prefs list, and adding the saved album to the list 
 
     _attemptedDataLoad = YES;
+
+    [[Logger sharedInstance] logString:@"done data load"];
 }
 
 @end

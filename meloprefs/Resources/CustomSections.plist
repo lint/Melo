@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Custom Section List</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>The sections listed here will appear in the Music app in the same order from top to bottom.\n\nDeleting a section will unpin the albums in that section.\n\nSections without a title will not be displayed in the Music app.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>action</key>
+			<string>addNewCustomSectionCell</string>
+			<key>label</key>
+			<string>Add New Custom Section</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>action</key>
+			<string>saveData</string>
+			<key>label</key>
+			<string>Manual Save</string>
+		</dict>
+		<!--
+		<dict>
+			<key>cell</key>
+			<string>PSTitleValueCell</string>
+			<key>label</key>
+			<string>Add New Custom Section</string>
+		</dict>
+		-->
+	</array>
+	<key>title</key>
+	<string>Custom Sections</string>
+</dict>
+</plist>
