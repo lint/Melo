@@ -893,6 +893,37 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
 %end
 
+%hook UIView
+
+// set the tint color of all uiviews 
+- (void)setTintColor:(id)arg1 {
+    
+    if (arg1) {
+        // get names of the pink color and current tint color
+        NSString *name = [arg1 accessibilityName];
+        NSString *pinkName = [[UIColor systemPinkColor] accessibilityName];
+
+        MeloManager *meloManager = [MeloManager sharedInstance];
+
+        // check if custom tint color is enabled and the names match
+        if (name && [pinkName isEqualToString:name] && [meloManager prefsBoolForKey:@"customTintColorEnabled"]) {
+            
+            // set the custom tint color
+            UIColor *color = [meloManager dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
+
+            if (color) {
+                %orig(color);
+                return;
+            }
+        }
+    }
+
+    // call orig if all conditions were not met
+    %orig;
+}
+
+%end
+
 %ctor {
 
     MeloManager *meloManager = [MeloManager sharedInstance];
@@ -901,6 +932,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         %init(LibraryRecentlyAddedViewController = objc_getClass("MusicApplication.LibraryRecentlyAddedViewController"), 
             TitleSectionHeaderView = objc_getClass("MusicApplication.TitleSectionHeaderView"),
             ArtworkPrefetchingController = objc_getClass("MusicApplication.ArtworkPrefetchingController"),
-            AlbumCell = objc_getClass("MusicApplication.AlbumCell"));
+            AlbumCell = objc_getClass("MusicApplication.AlbumCell")
+            );
     }
 }

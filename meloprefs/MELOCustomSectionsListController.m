@@ -243,7 +243,7 @@
 - (NSArray *)getValidCurrentCustomSectionsInfo {
 	HBLogDebug(@"%@", @"getValidCurrentCustomSectionsInfo");
 
-	NSMutableArray *sectionsInfo = [NSMutableArray arrayWithArray:[self getCurrentCustomSectionsInfo]]; //since I know it returns a mutable array, do I need to do this?
+	NSMutableArray *sectionsInfo = [NSMutableArray arrayWithArray:[self getCurrentCustomSectionsInfo]]; 
 	NSMutableArray *sectionsToRemove = [NSMutableArray array];
 
 	for (NSInteger i = 0; i < [sectionsInfo count]; i++) {

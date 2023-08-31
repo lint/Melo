@@ -7,7 +7,7 @@
 // overall tweak manager class
 @interface MeloManager : NSObject
 @property(strong, nonatomic) NSDictionary *prefs;
-@property(strong, nonatomic) NSDictionary *defaultPrefs;
+@property(strong, nonatomic) NSMutableDictionary *defaultPrefs;
 @property(strong, nonatomic) NSUserDefaults *defaults;
 @property(strong, nonatomic) NSMutableArray *recentlyAddedManagers;
 
@@ -23,5 +23,8 @@
 - (void)checkClearPins;
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender;
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
+
+- (NSDictionary *)colorToDict:(UIColor *)color;
+- (UIColor *)dictToColor:(NSDictionary *)dict;
 
 @end

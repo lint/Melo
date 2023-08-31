@@ -59,7 +59,7 @@ static MeloManager *sharedMeloManager;
 // load the saved preferences from file
 - (void)loadPrefs {
     _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
-    _defaultPrefs = @{
+    NSDictionary *defaultPrefs = @{
         @"enabled": @YES,
         @"customNumColumnsEnabled": @YES,
         @"customNumColumns": @4,
@@ -75,8 +75,12 @@ static MeloManager *sharedMeloManager;
         @"showShiftActionsEnabled": @YES,
         @"downloadedPinningEnabled": @NO,
         @"syncLibraryPinsEnabled":@NO,
-        @"customSectionsEnabled": @NO
+        @"customSectionsEnabled": @NO,
+        @"customTintColorEnabled": @NO//,
+        // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
+    _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
+    // [_defaultPrefs setObject:[self colorToDict:[UIColor systemPinkColor]] forKey:@"customTintColor"];
 }
 
 - (CGFloat)minimumCellSpacing {
@@ -127,6 +131,30 @@ static MeloManager *sharedMeloManager;
     if (![_recentlyAddedManagers containsObject:arg1]) {
         [_recentlyAddedManagers addObject:arg1];
     }
+}
+
+// converts a color object to a dictionary
+- (NSDictionary *)colorToDict:(UIColor *)color {
+	const CGFloat *components = CGColorGetComponents(color.CGColor);
+	
+    NSMutableDictionary *colorDict = [NSMutableDictionary new];
+	[colorDict setObject:[NSNumber numberWithFloat:components[0]] forKey:@"red"];
+	[colorDict setObject:[NSNumber numberWithFloat:components[1]] forKey:@"green"];
+	[colorDict setObject:[NSNumber numberWithFloat:components[2]] forKey:@"blue"];
+    [colorDict setObject:[NSNumber numberWithFloat:components[3]] forKey:@"alpha"];
+
+	return colorDict;
+}
+
+// converts a dictionary to a color object
+- (UIColor *)dictToColor:(NSDictionary *)dict {
+
+    CGFloat red = dict[@"red"] ? [dict[@"red"] floatValue] : 0;
+    CGFloat green = dict[@"green"] ? [dict[@"green"] floatValue] : 0;
+    CGFloat blue = dict[@"blue"] ? [dict[@"blue"] floatValue] : 0;
+    CGFloat alpha = dict[@"alpha"] ? [dict[@"alpha"] floatValue] : 1;
+
+    return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
 }
 
 @end

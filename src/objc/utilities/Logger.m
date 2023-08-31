@@ -70,6 +70,8 @@ static Logger *sharedLogger;
         if (error) {
             _contents = @"";
         }
+
+        _shouldLogColorInfo = NO;
     }
 
     return self;
@@ -106,6 +108,10 @@ static Logger *sharedLogger;
     va_end(va);
 
     [self logString:formattedStr];
+}
+
+- (BOOL)test {
+    return _shouldLogColorInfo;
 }
 
 @end

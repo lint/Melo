@@ -8,6 +8,7 @@
 @property(strong, nonatomic) NSObject *lock;
 @property(strong, nonatomic) NSString *contents;
 @property(assign, nonatomic) BOOL enabled;
+@property(assign, nonatomic) BOOL shouldLogColorInfo;
 
 + (void)load;
 + (instancetype)sharedInstance;
@@ -17,5 +18,7 @@
 
 - (void)logString:(NSString *)arg1;
 - (void)logStringWithFormat:(NSString *)arg1, ...;
+
+- (BOOL)test;
 
 @end

@@ -28,7 +28,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Layout</string>
+			<string>Album Layout</string>
 			<key>footerText</key>
 			<string></string>
 		</dict>
@@ -151,6 +151,40 @@
 			<string>MELOCustomSectionsListController</string>
 			<key>label</key>
 			<string>Custom Sections</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Theming</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customTintColorEnabled</string>
+			<key>label</key>
+			<string>Enable Custom Tint Color</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOColorPickerCell</string>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customTintColor</string>
+			<key>label</key>
+			<string>Custom Tint Color</string>
 		</dict>
 		<dict>
 			<key>cell</key>
