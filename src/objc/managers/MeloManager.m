@@ -76,18 +76,27 @@ static MeloManager *sharedMeloManager;
         @"downloadedPinningEnabled": @NO,
         @"syncLibraryPinsEnabled":@NO,
         @"customSectionsEnabled": @NO,
-        @"customTintColorEnabled": @NO//,
+        @"customTintColorEnabled": @NO,
+        @"customAlbumCellSpacingEnabled": @NO,
+        @"customAlbumCellSpacing": @5
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
     // [_defaultPrefs setObject:[self colorToDict:[UIColor systemPinkColor]] forKey:@"customTintColor"];
 }
 
+// returns the spacing between album cells 
 - (CGFloat)minimumCellSpacing {
     NSInteger numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
-    return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - numColumns) / 10 * 2.5 + 5 : 20;
+
+    if ([self prefsBoolForKey:@"customAlbumCellSpacingEnabled"]) {
+        return [[self prefsObjectForKey:@"customAlbumCellSpacing"] floatValue];
+    } else {
+        return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - numColumns) / 10 * 2.5 + 5 : 20;
+    }
 }
 
+// check preferences for if the pinned albums should be cleared
 - (void)checkClearPins {
 
     [[Logger sharedInstance] logString:@"MeloManager checkClearPins"];
@@ -120,6 +129,7 @@ static MeloManager *sharedMeloManager;
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender {
     for (RecentlyAddedManager *recentlyAddedManager in _recentlyAddedManagers) {
 
+        // do not notify the sending manager of the change or to any managers of different types (for full library vs downloaded music) when syncing is disabled enabled
         if (recentlyAddedManager != sender && ([self prefsBoolForKey:@"syncLibraryPinsEnabled"] || recentlyAddedManager.isDownloadedMusic == sender.isDownloadedMusic)) {
             recentlyAddedManager.unhandledDataChangeOccurred = YES;
         }

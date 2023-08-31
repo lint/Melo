@@ -126,6 +126,42 @@
 		</dict>		
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customAlbumCellSpacingEnabled</string>
+			<key>label</key>
+			<string>Custom Spacing Between Album Cells</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>5</integer>
+			<key>min</key>
+			<integer>0</integer>
+			<key>max</key>
+			<integer>40</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customAlbumCellSpacing</string>
+			<key>label</key>
+			<string>Spacing</string>
+		</dict>		
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Sections</string>
