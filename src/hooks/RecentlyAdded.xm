@@ -4,12 +4,6 @@
 #import "../objc/objc_classes.h"
 #import "../interfaces/interfaces.h"
 
-NSIndexPath *indexPathForContextMenuOverride;
-NSIndexPath *indexPathForContextActions;
-
-// should i make these global variables thread safe?
-BOOL shouldAddCustomContextActions = NO;
-
 %hook MPModelLibraryRequest
 
 - (void)setContentRange:(NSRange)arg1 {
@@ -294,44 +288,46 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 - (id)collectionView:(UICollectionView *)arg1 contextMenuConfigurationForItemAtIndexPath:(NSIndexPath *)arg2 point:(CGPoint)arg3 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) contextMenuConfigurationForItemAtIndexPath:<%ld-%ld> point:(do later if needed)", self, arg1, arg2.section, arg2.item]];
 
-    // in old code, this does some additional overrides and setting of global variables to ensure the context menu option is added properly
-    
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    MeloManager *meloManager = [MeloManager sharedInstance];
     if (![recentlyAddedManager isReadyForUse]) {
         return %orig;
     }
 
-    shouldAddCustomContextActions = YES;
-
+    // get the real index path for the adjusted index path
     NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
-    indexPathForContextActions = arg2;
-    indexPathForContextMenuOverride = arg2;
 
+    // set various values for override
+    meloManager.shouldAddCustomContextActions = YES;
+    meloManager.indexPathForContextActions = arg2;
+    meloManager.indexPathForContextMenuOverride = arg2;
+
+    // use injected data
     id orig = %orig(arg1, realIndexPath, arg3);
-    indexPathForContextMenuOverride = nil;
 
-    //HBLogDebug(@"\tmenu previewProvider: %@", [orig previewProvider]);
+    // reset override value
+    meloManager.indexPathForContextMenuOverride = nil;
 
     return orig;
-
-    // // use injected data
-    // return %orig(arg1, [recentlyAddedManager translateIndexPath:arg2], arg3);
 }
 
 - (void)collectionView:(UICollectionView *)arg1 willEndContextMenuInteractionWithConfiguration:(id)arg2 animator:(id)arg3 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) willEndContextMenuInteractionWithConfiguration: (%p) animator:(%p)", self, arg1, arg2, arg3]];
 
+    // no need to use injected data here
     %orig;
 
-    shouldAddCustomContextActions = NO;
-    //indexPathForContextMenuOverride = nil;
+    // reset override value
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    meloManager.shouldAddCustomContextActions = NO;
+    //meloManager.indexPathForContextMenuOverride = nil; // TODO: commented out in old code, remove?
 }
 
 - (void)collectionView:(UICollectionView *)arg1 willDisplayCell:(id)arg2 forItemAtIndexPath:(NSIndexPath *)arg3 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) willDisplayCell:(%p) forItemAtIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
 
-    // in old code, contained some checks for if the requested item is out of bounds for some reason
+    // TODO: in old code, contained some checks for if the requested item is out of bounds for some reason
     // i remember this fixing some crash, due to the system using the default index paths to request but not being able to properly translate them?
     // not really sure, but i bet it'll come up again..
     
@@ -359,8 +355,6 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // } else {
     //     %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
     // }
-
-
 }
 
 - (void)collectionView:(UICollectionView *)arg1 didEndDisplayingCell:(id)arg2 forItemAtIndexPath:(NSIndexPath *)arg3 {
@@ -501,11 +495,12 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // for now tho, i'll just move it to the first spot, then it will move back whenever the app is refreshed since the recently added section is not saved
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    MeloManager *meloManager = [MeloManager sharedInstance];
 
-    NSIndexPath *sourceAdjustedIndexPath = indexPathForContextActions;
+    NSIndexPath *sourceAdjustedIndexPath = meloManager.indexPathForContextActions;
     NSIndexPath *destAdjustedIndexPath = [NSIndexPath indexPathForItem:0 inSection:sectionIndex];
 
-    [[Logger sharedInstance] logStringWithFormat:@"indexPathForContextActions: %@", indexPathForContextActions];
+    [[Logger sharedInstance] logStringWithFormat:@"indexPathForContextActions: %@", meloManager.indexPathForContextActions];
 
     // commented out so that the block does not cause a crash while patching with allemand
     // // perform the move operation
@@ -522,6 +517,9 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleShiftAction:isMovingLeft:(%i)", self, isMovingLeft];
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
 
     NSIndexPath *sourceAdjustedIndexPath = indexPathForContextActions;
     NSIndexPath *destAdjustedIndexPath;
@@ -597,7 +595,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         albumActionsVC.libraryRecentlyAddedViewController = self;
         albumActionsVC.recentlyAddedManager = recentlyAddedManager;
         albumActionsVC.albumAdjustedIndexPath = indexPath;
-        indexPathForContextActions = indexPath;
+        meloManager.indexPathForContextActions = indexPath;
 
         albumActionsVC.modalPresentationStyle = UIModalPresentationPopover;
         albumActionsVC.preferredContentSize = CGSizeMake(280, 230);
@@ -653,9 +651,13 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 // prevents crashing when opening a context menu in a section other than 0
 - (void)reloadItemsAtIndexPaths:(NSArray *)arg1 {
 
-    if (indexPathForContextMenuOverride) {
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    NSIndexPath *overridingIndexPath = meloManager.indexPathForContextMenuOverride;
+
+    // check if overriding index path exists
+    if (overridingIndexPath) {
         [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UICollectionView: %p - inject index path during reload", self]];
-        arg1 = @[indexPathForContextMenuOverride];
+        arg1 = @[overridingIndexPath];
     }
 
     %orig;
@@ -666,9 +668,13 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 - (UICollectionViewCell *)cellForItemAtIndexPath:(NSIndexPath *)arg1 {
     [[Logger sharedInstance] logStringWithFormat:@"UICollectionView: %p cellForItemAtIndexPath: %@", self, arg1];
 
-    if (indexPathForContextMenuOverride) {
-        [[Logger sharedInstance] logStringWithFormat:@"\toverriding index path to: %@", indexPathForContextMenuOverride];
-        return %orig(indexPathForContextMenuOverride);
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    NSIndexPath *overridingIndexPath = meloManager.indexPathForContextMenuOverride;
+
+    // check if overriding index path exists
+    if (overridingIndexPath) {
+        [[Logger sharedInstance] logStringWithFormat:@"\toverriding index path to: %@", overridingIndexPath];
+        return %orig(overridingIndexPath);
     } else {
         return %orig;
     }
@@ -689,12 +695,14 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
     MeloManager *meloManager = [MeloManager sharedInstance];
+    RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
+
+    NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
+    BOOL shouldAddCustomContextActions = meloManager.shouldAddCustomContextActions;
 
     if ([meloManager prefsBoolForKey:@"customActionMenuEnabled"] || !currentLRAVC) {
         return %orig;
     }
-
-    RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
 
     // [[Logger sharedInstance] logString:@"children:"];
     // for (id child in arg1) {

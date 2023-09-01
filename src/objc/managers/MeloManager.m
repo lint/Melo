@@ -39,6 +39,7 @@ static MeloManager *sharedMeloManager;
         [self loadPrefs];
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         _recentlyAddedManagers = [NSMutableArray array];
+        self.shouldAddCustomContextActions = NO;
 
         [self checkClearPins];
     }

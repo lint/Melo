@@ -10,6 +10,9 @@
 @property(strong, nonatomic) NSMutableDictionary *defaultPrefs;
 @property(strong, nonatomic) NSUserDefaults *defaults;
 @property(strong, nonatomic) NSMutableArray *recentlyAddedManagers;
+@property(strong, atomic) NSIndexPath *indexPathForContextMenuOverride;
+@property(strong, atomic) NSIndexPath *indexPathForContextActions;
+@property(assign, atomic) BOOL shouldAddCustomContextActions;
 
 + (void)load;
 + (instancetype)sharedInstance;
