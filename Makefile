@@ -1,6 +1,6 @@
 export ARCHS = arm64e
 
-TARGET = iphone:latest:14.0
+export TARGET = iphone:14.5:14.0
 
 INSTALL_TARGET_PROCESSES = Music
 #INSTALL_TARGET_PROCESSES = SpringBoard
