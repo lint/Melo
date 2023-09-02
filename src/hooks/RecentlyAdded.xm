@@ -4,13 +4,20 @@
 #import "../objc/objc_classes.h"
 #import "../interfaces/interfaces.h"
 
+static void test() {
+    void (^testBlock)(void) = ^{};
+    testBlock();
+}
+
 %hook MPModelLibraryRequest
 
 - (void)setContentRange:(NSRange)arg1 {
     [[Logger sharedInstance] logStringWithFormat:@"MPModelLibraryRequest: %p - setContentRange: %@", self, arg1];
     [[Logger sharedInstance] logStringWithFormat:@"length: %li", (long)arg1.length];
 
-    arg1.length = 10000;
+    if (arg1.length > 0) {
+        arg1.length = 10000;
+    }
 
     %orig;
 }
@@ -27,8 +34,6 @@
     id dataSource = [[self collectionView] dataSource];
 
     if ([dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
-
-        // APManager *apManager = [APManager sharedInstance];
 
         MeloManager *meloManager = [MeloManager sharedInstance];
         CGSize size;
@@ -54,18 +59,6 @@
 
 %end
 
-// %hook UIView
-
-// - (void)layoutSubviews {
-//     %orig;
-// }
-
-// - (id)tintColor {
-//     return [UIColor redColor];
-// }
-
-// %end
-
 %hook TitleSectionHeaderView
 %property(strong, nonatomic) NSString *sectionIdentifier;
 %end
@@ -75,6 +68,11 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 %hook LibraryRecentlyAddedViewController
 %property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 %property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
+
+%new
+- (void)test {
+    test();
+}
 
 - (id)init {
 
@@ -176,6 +174,9 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         [[self recentlyAddedManager] setIsDownloadedMusic:NO];
     } else if ([title isEqualToString:localizedDownloadedMusicTitle]) {
         [[self recentlyAddedManager] setIsDownloadedMusic:YES];
+
+        NSArray *array = [NSArray array];
+        [[Logger sharedInstance] logStringWithFormat:@"%@", array[1]];
     }
 
     [[self recentlyAddedManager] loadData];
@@ -884,8 +885,8 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
     id dataSource = [[self _collectionView] dataSource];
     // BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")] || ([apManager prefsBoolForKey:@"affectAlbumsPagesEnabled"] && ([dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || [dataSource isKindOfClass:objc_getClass("MusicApplication.ArtistViewController")]));
-    BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")];
-    shouldChangeCornerRadius = shouldChangeCornerRadius && [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
+    BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]
+        && [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
 
     if (shouldChangeCornerRadius) {
 

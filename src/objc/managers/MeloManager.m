@@ -7,6 +7,11 @@ static MeloManager *sharedMeloManager;
 
 @implementation MeloManager
 
+- (int)test {
+    int (^block)(void) = ^{return 100;};
+    return block();
+}
+
 // loads the object if you don't need to use it right away
 + (void)load {
     [self sharedInstance];
