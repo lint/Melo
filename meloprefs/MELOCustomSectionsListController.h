@@ -4,7 +4,6 @@
 
 @interface PSListController ()
 - (void)_returnKeyPressed:(id)arg1;
-//- (NSInteger)tableView:(UITableView *)arg1 numberOfItemsInSection:(NSInteger)arg2;
 @end
 
 @interface PSEditableListController : PSListController
@@ -16,16 +15,14 @@
 @interface MELOCustomSectionsListController : PSEditableListController
 @property(strong, nonatomic) UIBarButtonItem *deleteSectionsButton;
 @property(strong, nonatomic) UIColor *accentColor;
-@property(strong, nonatomic) NSTimer *autosaveTimer;
-@property(assign, nonatomic) BOOL needsSave;
 
-- (BOOL)isCustomListCellAtIndexPath:(NSIndexPath *)arg1;
+- (BOOL)isCustomSectionCellSpecifier:(PSSpecifier *)specifier;
+- (BOOL)isCustomSectionCellAtIndexPath:(NSIndexPath *)arg1;
 - (void)addNewCustomSectionCell;
 - (void)deleteAllSections;
-- (NSArray *)getCurrentCustomSectionsInfo;
-- (NSArray *)getValidCurrentCustomSectionsInfo;
-- (void)setNeedsSave;
-- (void)autosaveTimerFired:(NSTimer *)arg1;
+- (NSArray *)serializeCustomSections;
+- (NSDictionary *)serializeCustomRecentlyAddedInfo;
 - (void)saveData;
-- (void)logSpecifiers;
+- (NSInteger)numberOfCustomSections;
+- (PSSpecifier *)customRecentlyAddedInfoSpecifier;
 @end

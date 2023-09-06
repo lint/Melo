@@ -5,35 +5,43 @@
 
 @implementation MELOCustomSectionsListCell
 
+// default initializer
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
 
     if (self) {
+
+        // create main title text field
         _titleTextField = [[UITextField alloc] init];
         _titleTextField.delegate = self;
-        _titleTextField.placeholder = @"Section Title (Required)";
+        _titleTextField.placeholder = @"Title";
         _titleTextField.font = [UIFont systemFontOfSize:14];
         [self.contentView addSubview:_titleTextField];
 
+        // create subtitle text field
         _subtitleTextField = [[UITextField alloc] init];
         _subtitleTextField.delegate = self;
-        _subtitleTextField.placeholder = @"Subtitle (Optional)";
+        _subtitleTextField.placeholder = @"Subtitle";
         _subtitleTextField.font = [UIFont systemFontOfSize:14];
         [self.contentView addSubview:_subtitleTextField];
 
+        // create UIView which separates the title and subtitle
         _verticalSeparatorView = [[UIView alloc] init];
         _verticalSeparatorView.backgroundColor = [UIColor colorWithRed:0.6 green:0.6 blue:0.6 alpha:0.5];
         [self.contentView addSubview:_verticalSeparatorView];
 
+        // i believe this hides the main PSTableCell title
         [self setShouldHideTitle:YES];
 
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpecifier) name:UITextFieldTextDidChangeNotification object:_titleTextField];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpecifier) name:UITextFieldTextDidChangeNotification object:_subtitleTextField];
+        // set a handler for whenever the text fields change
+        // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpecifier) name:UITextFieldTextDidChangeNotification object:_titleTextField];
+        // [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpecifier) name:UITextFieldTextDidChangeNotification object:_subtitleTextField];
     }
 
     return self;
 }
 
+// initializer with a given title and subtitle
 - (id)initWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2 {
     self = [self initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"MELOCustomSectionsListCell"];
 
@@ -47,47 +55,52 @@
     return self;
 }
 
+// sets the cell's specifier value
 - (void)setSpecifier:(PSSpecifier *)arg1 {
     [super setSpecifier:arg1];
 
     NSDictionary *properties = arg1.properties;
 
+    // update the text fields with the specifier contents
     _titleTextField.text = properties[@"customSectionTitle"];
     _subtitleTextField.text = properties[@"customSectionSubtitle"];
 }
 
+// handler for when the text field interaction finishes
+- (void)textFieldDidEndEditing:(UITextField *)arg1 {
+    [self updateSpecifier];
+}
+
+// updates the specifier with the current text field contents
 - (void)updateSpecifier {
 
     NSMutableDictionary *properties = [self specifier].properties;
-
     properties[@"customSectionTitle"] = _titleTextField.text;
     properties[@"customSectionSubtitle"] = _subtitleTextField.text;
 
-    //[self saveData];
-    MELOCustomSectionsListController *controller = (MELOCustomSectionsListController *)[[self _tableView] dataSource];
-    [controller setNeedsSave];
+    // save the changes to preferences file
+    [self saveData];
 }
 
+// save changes to preferences file by using the controller
 - (void)saveData {
     MELOCustomSectionsListController *controller = (MELOCustomSectionsListController *)[[self _tableView] dataSource];
     [controller saveData];
 }
 
-- (void)textFieldDidEndEditing:(UITextField *)arg1 {
-    [self updateSpecifier];
-}
-
+// setup the display for any subviews
 - (void)layoutSubviews {
     [super layoutSubviews];
+
+    /* set frames of text views and separator */
 
     CGFloat contentViewWidth = self.contentView.frame.size.width;
     CGFloat cellHeight = self.frame.size.height;
 
-    CGFloat edgeInset = 15;
     CGFloat separatorWidth = 2;
-
-    CGFloat textFieldWidth = contentViewWidth / 2 - edgeInset * 2 - separatorWidth;
+    CGFloat edgeInset = [UIView pu_layoutMarginWidthForCurrentScreenSize]; // = 15;
     CGFloat textFieldHeight = 18.5;
+    CGFloat textFieldWidth = contentViewWidth / 2 - edgeInset * 2 - separatorWidth;
 
     CGRect titleFrame = CGRectMake(edgeInset, ceil((cellHeight - textFieldHeight) / 2), textFieldWidth, textFieldHeight);
     CGRect subtitleFrame = CGRectMake((contentViewWidth + separatorWidth) / 2 + edgeInset, ceil((cellHeight - textFieldHeight) / 2), textFieldWidth, textFieldHeight);
@@ -96,6 +109,6 @@
     _titleTextField.frame = titleFrame;
     _subtitleTextField.frame = subtitleFrame;
     _verticalSeparatorView.frame = separatorFrame;
-}
+}    
 
 @end

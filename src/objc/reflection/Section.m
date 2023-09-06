@@ -176,12 +176,12 @@
 
 // creates a section with no albums for the recently added section
 + (instancetype)emptyRecentSection {
-    return [[Section alloc] initWithIdentifier:@"RECENTLY_ADDED_SECTION" title:@"Recently Added" subtitle:nil];
+    return [[Section alloc] initWithIdentifier:@"MELO_RECENTLY_ADDED_SECTION" title:@"Recently Added" subtitle:nil];
 }
 
 // creates a "pinned" section with no albums
 + (instancetype)emptyPinnedSection {
-    return [[Section alloc] initWithIdentifier:@"PINNED_SECTION" title:@"Pinned" subtitle:nil];
+    return [[Section alloc] initWithIdentifier:@"MELO_PINNED_SECTION" title:@"Pinned" subtitle:nil];
 }
 
 @end

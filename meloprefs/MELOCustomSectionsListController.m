@@ -5,6 +5,7 @@
 
 @implementation MELOCustomSectionsListController
 
+// default initializer
 - (instancetype)init {
 	self = [super init];
 
@@ -14,27 +15,35 @@
 
 		_deleteSectionsButton = [[UIBarButtonItem alloc] initWithTitle:@"Delete All" style:UIBarButtonItemStylePlain target:self action:@selector(deleteAllSections)];
 		_deleteSectionsButton.tintColor = [UIColor systemRedColor];
-
-		_needsSave = NO;
-		_autosaveTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(autosaveTimerFired:) userInfo:nil repeats:YES];
 	}
 
 	return self;
 }
 
+// get the current specifiers representing cells in the page
 - (NSArray *)specifiers {
-	HBLogDebug(@"%@", @"getting specifiers array");
 
 	if (!_specifiers) {
-		_specifiers = [self loadSpecifiersFromPlistName:@"CustomSections" target:self];
 
+		// load the static plist file
+		NSMutableArray *loadedSpecifiers = [NSMutableArray arrayWithArray:[self loadSpecifiersFromPlistName:@"CustomSections" target:self]];
+		
+		// load other saved preferences
 		NSURL *url = [NSURL fileURLWithPath:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
 		NSDictionary *settings = [NSDictionary dictionaryWithContentsOfURL:url error:nil];
+		NSArray *customSectionsInfo = settings[@"customSectionsInfo"];
+		NSDictionary *customRecentlyAddedInfo = settings[@"customRecentlyAddedInfo"];
 
-		for (NSDictionary *sectionInfo in settings[@"customSectionsInfoForPrefs"]) {
-
-			HBLogDebug(@"\tloaded section: %@, %@", sectionInfo[@"title"], sectionInfo[@"identifier"]);
-
+		// check if custom section info is present
+		if (!customSectionsInfo) {
+			_specifiers = loadedSpecifiers;
+			return _specifiers;
+		}
+		
+		// iterate over every saved custom section and insert them into the specifiers list
+		for (NSInteger i = 0; i < [customSectionsInfo count]; i++) {
+			
+			NSDictionary *sectionInfo = customSectionsInfo[i];
 			PSSpecifier *customCellSpecifier = [PSSpecifier preferenceSpecifierNamed:sectionInfo[@"identifier"] target:self set:NULL get:NULL detail:Nil cell:-1 edit:Nil];
 			NSMutableDictionary *properties = customCellSpecifier.properties;
 
@@ -42,22 +51,38 @@
 			properties[@"customSectionIdentifier"] = sectionInfo[@"identifier"];
 			properties[@"customSectionTitle"] = sectionInfo[@"title"];
 			properties[@"customSectionSubtitle"] = sectionInfo[@"subtitle"];
+			properties[@"customSectionType"] = @"MELO_USER_CUSTOM_SECTION";
 
-			[self insertSpecifier:customCellSpecifier atEndOfGroup:0];
+			// [self insertSpecifier:customCellSpecifier atEndOfGroup:0]; // caused crash when reload specifiers was called 
+			[loadedSpecifiers insertObject:customCellSpecifier atIndex:1 + i];
 		}
 
-		for (PSSpecifier *specifier in _specifiers) {
+		// iterate over every specifier
+		for (PSSpecifier *specifier in loadedSpecifiers) {
+
+			// replace newlines in group cell footer text
 			if ([specifier cellType] == PSGroupCell) {
 				NSString *footerText = [specifier propertyForKey:@"footerText"];
 				footerText = [footerText stringByReplacingOccurrencesOfString:@"\\n" withString:@"\n"];
 				[specifier setProperty:footerText forKey:@"footerText"];
 			}
+
+			// set custom recently added title and subtitle
+			if (customRecentlyAddedInfo && specifier.properties[@"cellClass"] == [MELOCustomSectionsListCell class]
+				&& [@"MELO_RECENTLY_ADDED_SECTION" isEqualToString:specifier.properties[@"customSectionIdentifier"]]) {
+
+				specifier.properties[@"customSectionTitle"] = customRecentlyAddedInfo[@"title"];
+				specifier.properties[@"customSectionSubtitle"] = customRecentlyAddedInfo[@"subtitle"];
+			}
 		}
+
+		_specifiers = loadedSpecifiers;
 	}
 
 	return _specifiers;
 }
 
+// get the preference value for a given specifier
 - (id)readPreferenceValue:(PSSpecifier *)specifier {
 	NSURL *url = [NSURL fileURLWithPath:[NSString stringWithFormat:@"/var/jb/var/mobile/Library/Preferences/%@.plist", specifier.properties[@"defaults"]]];
 	NSMutableDictionary *settings = [NSMutableDictionary dictionary];
@@ -66,6 +91,7 @@
 	return (settings[specifier.properties[@"key"]]) ?: specifier.properties[@"default"];
 }
 
+// save the preference value for a given specifier
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
 	NSURL *url = [NSURL fileURLWithPath:[NSString stringWithFormat:@"/var/jb/var/mobile/Library/Preferences/%@.plist", specifier.properties[@"defaults"]]];
 	NSMutableDictionary *settings = [NSMutableDictionary dictionary];
@@ -81,21 +107,51 @@
 	}
 }
 
+// save custom sections information to the preferences file
+- (void)saveData {
+	NSURL *url = [NSURL fileURLWithPath:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
+	NSMutableDictionary *settings = [NSMutableDictionary dictionary];
+	[settings addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfURL:url error:nil]];
+
+	settings[@"customSectionsInfo"] = [self serializeCustomSections];
+	settings[@"customRecentlyAddedInfo"] = [self serializeCustomRecentlyAddedInfo];
+	// settings[@"customSectionsInfo"] = [self serializeValidCustomSections];
+	[settings writeToURL:url error:nil];
+
+	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("com.lint.melo.prefs/prefschanged"), NULL, NULL, YES);
+}
+
+// called when the main view is about to be presented on screen
 - (void)viewWillAppear:(BOOL)arg1 {
 	[super viewWillAppear:arg1];
 	self.navigationItem.rightBarButtonItem.tintColor = _accentColor;
+
+	UITableView *table = [self table];
+	if (table) {
+		table.allowsSelectionDuringEditing = YES;
+	}
 }
 
-- (UITableViewCellEditingStyle)tableView:(UITableView *)arg1 editingStyleForRowAtIndexPath:(NSIndexPath *)arg2 {
-	return [self isCustomListCellAtIndexPath:arg2] ? UITableViewCellEditingStyleDelete : UITableViewCellEditingStyleNone;
+// called after the main view was presented on screen
+- (void)viewDidAppear:(BOOL)arg1 {
+	[super viewWillAppear:arg1];
+	self.navigationItem.rightBarButtonItem.tintColor = _accentColor;
+
+	// UITableView *table = [self table];
+	// if (table) {
+	// 	table.allowsSelectionDuringEditing = YES;
+	// }
 }
 
+// UITableViewDataSource method - returns a cell instance for a given index path
 - (UITableViewCell *)tableView:(UITableView *)arg1 cellForRowAtIndexPath:(NSIndexPath *)arg2 {
-	HBLogDebug(@"MELOCustomSectionsListController tableView: cellForRowAtIndexPath: %ld, %ld", arg2.section, arg2.row);
 
-	PSTableCell *cell =  (PSTableCell *)[super tableView:arg1 cellForRowAtIndexPath:arg2];
+	PSTableCell *cell = (PSTableCell *)[super tableView:arg1 cellForRowAtIndexPath:arg2];
+	// PSSpecifier *specifier = [cell specifier];
+	
 	[cell setCellEnabled:YES];
 
+	// set colors for the cell
 	if (cell.specifier.cellType == PSButtonCell) {
 		cell.textLabel.textColor = _accentColor;
 		cell.textLabel.highlightedTextColor = _accentColor;
@@ -104,45 +160,86 @@
 	return cell;
 }
 
-- (NSIndexPath *)tableView:(UITableView *)arg1 targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)destinationIndexPath {
-	return destinationIndexPath.section == sourceIndexPath.section ? destinationIndexPath : sourceIndexPath;
-	//return [self isCustomListCellAtIndexPath:destinationIndexPath] ? destinationIndexPath : sourceIndexPath;
-}
-
-- (BOOL)tableView:(UITableView *)arg1 canMoveRowAtIndexPath:(NSIndexPath *)arg2 {
-	HBLogDebug(@"canMoveRowAtIndexPath: %@ result: %i", arg2, [self isCustomListCellAtIndexPath:arg2]);
-
-	return [self isCustomListCellAtIndexPath:arg2];
-}
-
+// UITableViewDataSource method - move a cell from one index path to another 
 - (void)tableView:(UITableView *)arg1 moveRowAtIndexPath:(NSIndexPath *)arg2 toIndexPath:(NSIndexPath *)arg3 {
-	HBLogDebug(@"moveRowAtIndexPath: %@ toIndexPath: %@", arg2, arg3);
 
-	NSInteger indx1 = [self indexForIndexPath:arg2];
-	NSInteger indx2 = [self indexForIndexPath:arg3];
+	// get the index in the specifiers array
+	NSInteger sourceIndex = [self indexForIndexPath:arg2];
+	NSInteger destIndex = [self indexForIndexPath:arg3];
 
-	PSSpecifier *specifier = [self specifierAtIndex:indx1];
+	// move the specifier to the given index
+	PSSpecifier *specifier = [self specifierAtIndex:sourceIndex];
 	[_specifiers removeObject:specifier];
-	[_specifiers insertObject:specifier atIndex:indx2];
+	[_specifiers insertObject:specifier atIndex:destIndex];
 
+	// save the changes
 	[self saveData];
 }
 
+// UITableViewDataSource method - determine if a cell is allowed to be moved
+- (BOOL)tableView:(UITableView *)arg1 canMoveRowAtIndexPath:(NSIndexPath *)arg2 {
+
+	// only allow a cell to be moved if it is a custom section cell
+	return [self isCustomSectionCellAtIndexPath:arg2];
+}
+
+// UITableViewDelegate method - always returning the index path allows button cells to be pressed while in editing mode
+- (NSIndexPath *)tableView:(UITableView *)arg1 willSelectRowAtIndexPath:(NSIndexPath *)arg2 {
+	return arg2;
+}
+
+// UITableViewDelegate method - "Asks the delegate to return a new index path to retarget a proposed move of a row."
+- (NSIndexPath *)tableView:(UITableView *)arg1 targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)destinationIndexPath {
+	
+	// PSSpecifier *targetSpecifier = [self specifierAtIndexPath:destinationIndexPath];
+
+	// only allow cells to move within their section
+	if (destinationIndexPath.section != sourceIndexPath.section) {
+		return sourceIndexPath;
+	} 
+
+	return destinationIndexPath;
+}
+
+// UITableViewDelegate method - "Asks the delegate for the editing style of a row at a particular location in a table view."
+- (UITableViewCellEditingStyle)tableView:(UITableView *)arg1 editingStyleForRowAtIndexPath:(NSIndexPath *)arg2 {
+
+	// only allow editing of custom section cells
+	if ([self isCustomSectionCellAtIndexPath:arg2]) {
+		return UITableViewCellEditingStyleDelete;
+	}
+
+	return UITableViewCellEditingStyleNone;
+}
+
+// UITableViewDelegate method - "Asks the delegate whether the background of the specified row should be indented while the table view is in editing mode"
+- (BOOL)tableView:(UITableView *)arg1 shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)arg2 {
+	return [self isCustomSectionCellAtIndexPath:arg2];
+}
+
+// UITableViewDataSource method - "Asks the data source to commit the insertion or deletion of a specified row"
 - (void)tableView:(UITableView *)arg1 commitEditingStyle:(UITableViewCellEditingStyle)arg2 forRowAtIndexPath:(NSIndexPath *)arg3 {
-	HBLogDebug(@"\tcommitEditingStyle: %ld forRowAtIndexPath:%@", arg2, arg3);
+	// [super tableView:arg1 commitEditingStyle:arg2 forRowAtIndexPath:arg3];
 
-	[super tableView:arg1 commitEditingStyle:arg2 forRowAtIndexPath:arg3];
+	if (arg2 == UITableViewCellEditingStyleDelete) {
+
+		PSSpecifier *specifier = [self specifierAtIndexPath:arg3];
+		[self removeSpecifier:specifier animated:YES];
+
+	// currently unused
+	} else if (arg2 == UITableViewCellEditingStyleInsert) {
+		[self addNewCustomSectionCell];
+	}
+
+	// save data whenever a row is added or deleted
 	[self saveData];
 }
 
+// called when the edit / done button is tapped
 - (void)editDoneTapped {
-	HBLogDebug(@"%@", @"MELOCustomSectionsListController editDoneTapped");
-
 	[super editDoneTapped];
 
 	self.navigationItem.rightBarButtonItem.tintColor = _accentColor;
-
-	HBLogDebug(@"isEditing: %i", [self editable]);
 
 	//[UIView animateWithDuration:1.0 animations:^{
 		if ([self editable]) {
@@ -154,38 +251,48 @@
 		}
 	//} completion:nil];
 
-	//put an editing check before saving to file?
+	//TODO: put an editing check before saving to file?
 	[self saveData];
 }
 
+// TODO: does this actually do anything? when i hit enter in editing mode nothing happens
 - (void)_returnKeyPressed:(NSNotification *)arg1 {
 	[self.view endEditing:YES];
 	[super _returnKeyPressed:arg1];
 }
 
-- (BOOL)isCustomListCellAtIndexPath:(NSIndexPath *)arg1 {
+// returns if a given cell is a custom section cell
+- (BOOL)isCustomSectionCellAtIndexPath:(NSIndexPath *)arg1 {
 	PSSpecifier *specifier = [self specifierAtIndex:[self indexForIndexPath:arg1]];
-	return specifier.properties[@"cellClass"] == [MELOCustomSectionsListCell class];
+	return [self isCustomSectionCellSpecifier:specifier];
 }
 
-- (void)addNewCustomSectionCell {
-	HBLogDebug(@"%@", @"Adding new custom section cell");
+// returns if a given specifier is for a custom section cell
+- (BOOL)isCustomSectionCellSpecifier:(PSSpecifier *)specifier {
+	return specifier.properties[@"cellClass"] == [MELOCustomSectionsListCell class] 
+		&& [@"MELO_USER_CUSTOM_SECTION" isEqualToString:specifier.properties[@"customSectionType"]];
+}
 
+// adds a new custom section to the end of the list (handler for button)
+- (void)addNewCustomSectionCell {
 	PSSpecifier *newCustomCellSpecifier = [PSSpecifier preferenceSpecifierNamed:@"placeholder" target:self set:NULL get:NULL detail:Nil cell:PSTitleValueCell edit:Nil];
 	NSMutableDictionary *properties = newCustomCellSpecifier.properties;
 
+	// set properties of the specifier
 	properties[@"cellClass"] = [MELOCustomSectionsListCell class];
 	properties[@"customSectionIdentifier"] = [[NSProcessInfo processInfo] globallyUniqueString];
 	properties[@"customSectionTitle"] = @"";
 	properties[@"customSectionSubtitle"] = @"";
+	properties[@"customSectionType"] = @"MELO_USER_CUSTOM_SECTION";
 
-	[self insertSpecifier:newCustomCellSpecifier atEndOfGroup:0 animated:YES];
+	// [self insertSpecifier:newCustomCellSpecifier atEndOfGroup:0 animated:YES];
+	NSInteger insertIndex = [self numberOfCustomSections] + 1;
+	[self insertSpecifier:newCustomCellSpecifier atIndex:insertIndex animated:YES];
 	[self saveData];
 }
 
-
+// permanently removes all custom sections (handler for button)
 - (void)deleteAllSections {
-	HBLogDebug(@"%@", @"deleting sections...");
 
 	// UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"All custom sections and their pins will be deleted. Do you want to continue?" preferredStyle:UIAlertControllerStyleAlert];
 
@@ -194,12 +301,14 @@
 
 		NSMutableArray *specifiersToDelete = [NSMutableArray array];
 
+		// find custom cell specifiers
 		for (PSSpecifier *specifier in _specifiers) {
-			if (specifier.properties[@"cellClass"] == [MELOCustomSectionsListCell class]) {
+			if ([self isCustomSectionCellSpecifier:specifier]) {
 				[specifiersToDelete addObject:specifier];
 			}
 		}
 
+		// remove all matched specifiers
 		for (PSSpecifier *specifier in specifiersToDelete) {
 			[self removeSpecifier:specifier animated:YES];
 		}
@@ -212,88 +321,70 @@
 	// [self presentViewController:alert animated:YES completion:nil];
 }
 
-- (NSArray *)getCurrentCustomSectionsInfo {
-	HBLogDebug(@"%@", @"getCurrentCustomSectionsInfo");
+// returns an array of dictionaries representing each custom section
+- (NSArray *)serializeCustomSections {
 
 	NSMutableArray *sectionsInfo = [NSMutableArray array];
 
+	// iterate over every specifier
 	for (NSInteger i = 0; i < [_specifiers count]; i++) {
+		PSSpecifier *specifier = [self specifierAtIndex:i];
+		NSMutableDictionary *properties = specifier.properties;
 
-		NSMutableDictionary *properties = [self specifierAtIndex:i].properties;
+		// check if the specifier is for a custom section
+		if ([self isCustomSectionCellSpecifier:specifier]) {
 
-		if (properties[@"cellClass"] == [MELOCustomSectionsListCell class]) {
-
+			// extract necessary values (and trim them)
 			NSString *title = [properties[@"customSectionTitle"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 			NSString *subtitle = [properties[@"customSectionSubtitle"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+			NSString *identifier = properties[@"customSectionIdentifier"];
 
-			NSDictionary *info = @{@"identifier" : properties[@"customSectionIdentifier"], @"title" : title, @"subtitle" : subtitle};
-			//HBLogDebug(@"added title: %@", properties[@"customSectionTitle"]);
-
+			NSDictionary *info = @{@"identifier" : identifier, @"title" : title, @"subtitle" : subtitle};
 			[sectionsInfo addObject:info];
 		}
 	}
 
-	for (NSDictionary *info in sectionsInfo) {
-		HBLogDebug(@"\tsection: %@, %@",info[@"title"], info[@"identifier"]);
-	}
-
 	return sectionsInfo;
 }
 
-- (NSArray *)getValidCurrentCustomSectionsInfo {
-	HBLogDebug(@"%@", @"getValidCurrentCustomSectionsInfo");
+// returns a dictionary representing the renamed recently added section
+- (NSDictionary *)serializeCustomRecentlyAddedInfo {
 
-	NSMutableArray *sectionsInfo = [NSMutableArray arrayWithArray:[self getCurrentCustomSectionsInfo]]; 
-	NSMutableArray *sectionsToRemove = [NSMutableArray array];
+	PSSpecifier *specifier = [self customRecentlyAddedInfoSpecifier];
 
-	for (NSInteger i = 0; i < [sectionsInfo count]; i++) {
+	NSString *title = [specifier.properties[@"customSectionTitle"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+	NSString *subtitle = [specifier.properties[@"customSectionSubtitle"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+	NSString *identifier = specifier.properties[@"customSectionIdentifier"];
 
-		NSString *title = sectionsInfo[i][@"title"];
+	return @{@"identifier" : identifier, @"title" : title, @"subtitle" : subtitle};
+}
 
-		if (!title || [title isEqualToString:@""]) {
-			[sectionsToRemove addObject:sectionsInfo[i]];
+// returns the number of custom section cells
+- (NSInteger)numberOfCustomSections {
+
+	NSInteger count = 0;
+
+	for (PSSpecifier *specifier in _specifiers) {
+
+		if ([self isCustomSectionCellSpecifier:specifier]) {
+			count++;
 		}
 	}
 
-	[sectionsInfo removeObjectsInArray:sectionsToRemove];
-	return sectionsInfo;
+	return count;
 }
 
-- (void)logSpecifiers {
-
-	for (NSInteger i = 0; i < [_specifiers count]; i++) {
-		PSSpecifier *spec = [self specifierAtIndex:i];
-		HBLogDebug(@"\tspecifier name: %@", [spec properties][@"customSectionTitle"]);
+// returns the specifier associated with the custom recently added title and subtitle
+- (PSSpecifier *)customRecentlyAddedInfoSpecifier {
+	
+	for (PSSpecifier *specifier in _specifiers) {
+		if (specifier.properties[@"cellClass"] == [MELOCustomSectionsListCell class]
+			&& [@"MELO_RECENTLY_ADDED_SECTION" isEqualToString:specifier.properties[@"customSectionIdentifier"]]) {
+			return specifier;
+		}
 	}
-}
-
-- (void)setNeedsSave {
-	HBLogDebug(@"%@", @"setting needs save");
-	_needsSave = YES;
-}
-
-- (void)autosaveTimerFired:(NSTimer *)arg1 {
-	HBLogDebug(@"%@", @"AutosaveTimerFired");
-
-	if (_needsSave) {
-		HBLogDebug(@"%@", @"Needs save");
-		[self saveData];
-		_needsSave = NO;
-	}
-}
-
-- (void)saveData {
-	HBLogDebug(@"%@", @"saving custom section info");
-
-	NSURL *url = [NSURL fileURLWithPath:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
-	NSMutableDictionary *settings = [NSMutableDictionary dictionary];
-	[settings addEntriesFromDictionary:[NSDictionary dictionaryWithContentsOfURL:url error:nil]];
-
-	settings[@"customSectionsInfoForPrefs"] = [self getCurrentCustomSectionsInfo];
-	settings[@"customSectionsInfo"] = [self getValidCurrentCustomSectionsInfo];
-	[settings writeToURL:url error:nil];
-
-	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("com.lint.melo.prefs/prefschanged"), NULL, NULL, YES);
+	
+	return nil;
 }
 
 @end

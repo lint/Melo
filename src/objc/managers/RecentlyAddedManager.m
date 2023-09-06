@@ -392,11 +392,12 @@
         _processedRealAlbumOrder = NO;
 
         NSString *userDefaultsKey = [self userDefaultsKey];
+        MeloManager *meloManager = [MeloManager sharedInstance];
 
-        if ([[MeloManager sharedInstance] prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
+        if ([meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
             userDefaultsKey = @"MELO_DATA_LIBRARY";
 
-            if ([[MeloManager sharedInstance] prefsBoolForKey:@"customSectionsEnabled"]) {
+            if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
                 userDefaultsKey = [userDefaultsKey stringByAppendingString:@"_CUSTOM_SECTIONS"];
             }
         }
@@ -406,11 +407,12 @@
 
         [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 
-        if ([[MeloManager sharedInstance] prefsBoolForKey:@"customSectionsEnabled"]) {
+        if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
 
             [[Logger sharedInstance] logString:@"custom sections are enabled"];
 
             NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
+            NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
             NSMutableArray *defaultsSections = [NSMutableArray array];
             NSMutableArray *finalSections = [NSMutableArray array];
 
@@ -444,7 +446,14 @@
                 }
             }
 
-            [finalSections addObject:[Section emptyRecentSection]];
+            Section *recentSection = [Section emptyRecentSection];
+
+            if ([meloManager prefsBoolForKey:@"renameRecentlyAddedSectionEnabled"] && customRecentlyAddedInfoFromPrefs) {
+                recentSection.title = customRecentlyAddedInfoFromPrefs[@"title"];
+                recentSection.subtitle = customRecentlyAddedInfoFromPrefs[@"subtitle"];
+            }
+
+            [finalSections addObject:recentSection];
             _sections = finalSections;
 
         } else {

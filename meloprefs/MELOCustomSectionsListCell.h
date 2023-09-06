@@ -2,6 +2,10 @@
 #import <Preferences/PSTableCell.h>
 #import <UIKit/UIKit.h>
 
+@interface UIView ()
++ (CGFloat)pu_layoutMarginWidthForCurrentScreenSize;
+@end
+
 @interface PSTableCell ()
 - (UITableView *)_tableView;
 - (void)setShouldHideTitle:(BOOL)arg1;

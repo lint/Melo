@@ -84,7 +84,8 @@ static MeloManager *sharedMeloManager;
         @"customSectionsEnabled": @NO,
         @"customTintColorEnabled": @NO,
         @"customAlbumCellSpacingEnabled": @NO,
-        @"customAlbumCellSpacing": @5
+        @"customAlbumCellSpacing": @5,
+        @"renameRecentlyAddedSectionEnabled": @NO
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];

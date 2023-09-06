@@ -14,7 +14,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>The sections listed here will appear in the Music app in the same order from top to bottom.\n\nDeleting a section will unpin the albums in that section.\n\nSections without a title will not be displayed in the Music app.</string>
+			<string>Custom sections can be created, deleted, or reordered. Deleting a section will move any pinned albums back to the Recently Added section.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -40,6 +40,46 @@
 			<string>Add New Custom Section</string>
 		</dict>
 		-->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Recently Added Section</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>renameRecentlyAddedSectionEnabled</string>
+			<key>label</key>
+			<string>Rename Recently Added</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOCustomSectionsListCell</string>
+			<key>customSectionIdentifier</key>
+			<string>MELO_RECENTLY_ADDED_SECTION</string>
+			<key>customSectionTitle</key>
+			<string></string>
+			<key>customSectionSubtitle</key>
+			<string></string>
+			<key>customSectionType</key>
+			<string>MELO_RENAME_RECENTLY_ADDED_SECTION</string>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customRecentlyAddedInfo</string>
+		</dict>		
 	</array>
 	<key>title</key>
 	<string>Custom Sections</string>
