@@ -4,11 +4,6 @@
 #import "../objc/objc_classes.h"
 #import "../interfaces/interfaces.h"
 
-static void test() {
-    void (^testBlock)(void) = ^{};
-    testBlock();
-}
-
 %hook MPModelLibraryRequest
 
 - (void)setContentRange:(NSRange)arg1 {
@@ -60,7 +55,140 @@ static void test() {
 %end
 
 %hook TitleSectionHeaderView
-%property(strong, nonatomic) NSString *sectionIdentifier;
+%property(strong, nonatomic) UIImageView *chevronIndicatorView;
+%property(strong, nonatomic) NSString *identifier;
+%property(strong, nonatomic) UITapGestureRecognizer *tapGesture;
+%property(strong, nonatomic) LibraryRecentlyAddedViewController *recentlyAddedViewController;
+
+// returns the recently added manager associated with the library recently added view controller
+%new 
+- (RecentlyAddedManager *)recentlyAddedManager {
+    return [[self recentlyAddedViewController] recentlyAddedManager];
+}
+
+// returns whether or not the section with this view is collapsed or not
+%new 
+- (BOOL)isCollapsed {
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    Section *section = [recentlyAddedManager sectionWithIdentifier:[self identifier]];
+
+    return section ? section.isCollapsed : NO;
+}
+
+// create UI items that are used to collapse sections
+%new
+- (void)createCollapseItems {
+
+    UIImageView *chevronIndicatorView = [self chevronIndicatorView];
+    UITapGestureRecognizer *tapGesture = [self tapGesture];
+
+    // create the chevron indicator image view if it does not exist
+    if (!chevronIndicatorView) {
+        chevronIndicatorView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"chevron.right" withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightBold]]];
+        chevronIndicatorView.contentMode = UIViewContentModeScaleAspectFit;
+
+        [self setChevronIndicatorView:chevronIndicatorView];
+        [self addSubview:chevronIndicatorView];
+
+    // readd the chevron indicator image view if it exists but is not a subview of this view
+    } else if (![chevronIndicatorView isDescendantOfView:self]) {
+        [chevronIndicatorView removeFromSuperview];
+        [self addSubview:chevronIndicatorView];
+    }
+
+    // create the tap gesture recognizer if it does not exist
+    if (!tapGesture) {
+        tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTapGesture:)];
+        tapGesture.numberOfTapsRequired = 1;
+        tapGesture.numberOfTouchesRequired = 1;
+
+        [self setTapGesture:tapGesture];
+        [self addGestureRecognizer:tapGesture];
+    
+    // check if the view currently does not have the given tap gesture recognizer
+    } else if (![[self gestureRecognizers] containsObject:tapGesture]) {
+
+        // remove all targets from the recognizer and readd it to this view
+        [tapGesture removeTarget:nil action:NULL];
+        [tapGesture addTarget:self action:@selector(handleTapGesture:)];
+        [self addGestureRecognizer:tapGesture];
+    }
+
+    // TODO: 
+    // button.userInteractionEnabled = ![apManager inWiggleMode];
+    // chevronIndicatorView.alpha = [apManager inWiggleMode] ? 0 : 1;
+
+    // set the rotation of the chevron indicator image view
+    chevronIndicatorView.transform = [self isCollapsed] ? CGAffineTransformMakeRotation(0) :  CGAffineTransformMakeRotation(M_PI_2);
+}
+
+// update any children subviews of this view
+- (void)layoutSubviews {
+    %orig;
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+
+    if (recentlyAddedManager && [recentlyAddedManager isReadyForUse]) {
+
+        UIImageView *chevronIndicatorView = [self chevronIndicatorView];
+        UIView *titleDrawingView = MSHookIvar<UIView *>(self, "titleTextDrawingView");
+        UIView *subtitleDrawingView = MSHookIvar<UIView *>(self, "subtitleTextDrawingView");
+
+        CGRect titleFrame = [titleDrawingView frame];
+        CGRect subtitleFrame = [subtitleDrawingView frame];
+
+        CGFloat imageViewSizeVal = titleFrame.size.height / 1.25;
+        CGFloat screenWidth = [[UIScreen mainScreen] bounds].size.width;
+
+        if (chevronIndicatorView) {
+            
+            CGFloat imageViewYOrigin = (titleFrame.origin.y * 2 + titleFrame.size.height - imageViewSizeVal) / 2;
+            CGFloat imageViewXOrigin = (subtitleDrawingView ? subtitleFrame.origin.x + subtitleFrame.size.width : titleFrame.origin.x + titleFrame.size.width) + 12;
+            //imageViewXOrigin = imageViewXOrigin < screenWidth ? imageViewXOrigin : screenWidth - imageViewSizeVal; // commented out in old code
+
+            if (imageViewXOrigin  + imageViewSizeVal > screenWidth) {
+                imageViewXOrigin = screenWidth - imageViewSizeVal - 10;
+                UIEdgeInsets currentInsets = [self music_layoutInsets];
+                [self music_setLayoutInsets:UIEdgeInsetsMake(currentInsets.top, currentInsets.left, currentInsets.bottom, 40 + imageViewSizeVal)];
+            }
+
+            CGRect imageViewFrame = CGRectMake(imageViewXOrigin, imageViewYOrigin, imageViewSizeVal, imageViewSizeVal);
+            chevronIndicatorView.frame = imageViewFrame;
+
+            // [UIView animateWithDuration:0.2 animations:^{
+                chevronIndicatorView.transform = [self isCollapsed] ? CGAffineTransformMakeRotation(0) :  CGAffineTransformMakeRotation(M_PI_2);
+            // }];
+
+        }
+    }
+}
+
+// handle a single tap gesture performed on this view
+%new
+- (void)handleTapGesture:(UIGestureRecognizer *)arg1 {
+
+    LibraryRecentlyAddedViewController *lravc = [self recentlyAddedViewController];
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    
+    BOOL wasCollapsed = [self isCollapsed];
+    NSInteger sectionIndex = [recentlyAddedManager sectionIndexForIdentifier:[self identifier]];
+
+    // do not try to toggle collapsed for an invalid section
+    if (sectionIndex < 0) {
+        [[Logger sharedInstance] logString:@"TitleSectionHeaderView could not locate it's associated section"];
+        return;
+    }
+
+    // animate the indicator changing to the new orientation
+    // [UIView animateWithDuration:0.2 animations:^{
+        [self chevronIndicatorView].transform = wasCollapsed ? CGAffineTransformMakeRotation(M_PI_2) : CGAffineTransformMakeRotation(0);
+    // }];
+
+    // perform additional data and visual updates
+    [lravc toggleSectionCollapsedAtIndex:sectionIndex];
+}
+
 %end
 
 static LibraryRecentlyAddedViewController *currentLRAVC;
@@ -68,11 +196,6 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 %hook LibraryRecentlyAddedViewController
 %property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 %property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
-
-%new
-- (void)test {
-    test();
-}
 
 - (id)init {
 
@@ -109,7 +232,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
     currentLRAVC = self;
     // was potentially going to put in a check to see if a change was detected from another library recently added view controller instance
-    // this would be tracked thru melomanager somehow
+    // this would be tracked thru meloManager somehow
     // but this seems to work?
     // nvm it causes lag when going in / out of an album.. need this
     
@@ -174,9 +297,6 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         [[self recentlyAddedManager] setIsDownloadedMusic:NO];
     } else if ([title isEqualToString:localizedDownloadedMusicTitle]) {
         [[self recentlyAddedManager] setIsDownloadedMusic:YES];
-
-        NSArray *array = [NSArray array];
-        [[Logger sharedInstance] logStringWithFormat:@"%@", array[1]];
     }
 
     [[self recentlyAddedManager] loadData];
@@ -209,7 +329,9 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         return %orig;
     }
 
-    return [recentlyAddedManager numberOfAlbumsInSection:arg2];
+    // return 0 if the section is collapsed, otherwise return the actual number of albums
+    Section *section = [recentlyAddedManager sectionAtIndex:arg2];
+    return section.isCollapsed ? 0 : [section numberOfAlbums];
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)arg1 viewForSupplementaryElementOfKind:(id)arg2 atIndexPath:(NSIndexPath *)arg3 {
@@ -228,6 +350,10 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     UICollectionReusableView *orig = %orig;
     TitleSectionHeaderView *titleHeaderView = (TitleSectionHeaderView *)orig;
 
+    if (section.identifier) {
+        [titleHeaderView setIdentifier:section.identifier];
+    }
+
     if (section.title) {
         [titleHeaderView setTitle:section.title];
     }
@@ -235,6 +361,12 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     if (section.subtitle) {
         [titleHeaderView setSubtitle:section.subtitle];
     }
+
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"collapsibleSectionsEnabled"]) {
+        [titleHeaderView createCollapseItems];
+    }
+
+    [titleHeaderView setRecentlyAddedViewController:self];
 
     return orig;
 }
@@ -481,7 +613,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
             Album *album = [[Album alloc] initWithDictionary:info];
 
             [realAlbumOrder addObject:album];
-            [[Logger sharedInstance] logString:[NSString stringWithFormat:@"id: %@, artist: %@, title: %@", info[@"identifier"], info[@"artist"], info[@"title"]]];
+            // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"id: %@, artist: %@, title: %@", info[@"identifier"], info[@"artist"], info[@"title"]]];
         }
 
         [recentlyAddedManager processRealAlbumOrder:realAlbumOrder];
@@ -546,10 +678,16 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 - (void)moveAlbumCellFromAdjustedIndexPath:(NSIndexPath *)sourceIndexPath toAdjustedIndexPath:(NSIndexPath *)destIndexPath dataUpdateBlock:(void (^)())dataUpdateBlock {
     [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - moveAlbumCellFromAdjustedIndexPath:%@ toAdjustedIndexPath:%@", self, sourceIndexPath, destIndexPath];
 
-    // RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    MeloManager *meloManager = [MeloManager sharedInstance];
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    Section *destSection = [recentlyAddedManager sectionAtIndex:destIndexPath.section];
 
-    // old code first uncollapsed the destination section if it was collapsed
+    // uncollapse section if necessary
+    if ([meloManager prefsBoolForKey:@"collapsibleSectionsEnabled"] && destSection.isCollapsed) {
+        [self toggleSectionCollapsedAtIndex:destIndexPath.section];
+    }
+
 
     // execute the data update
     // dataUpdateBlock();
@@ -562,6 +700,46 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     // old code would then restore the source section's visible state 
     // and would also hide the source section if it became empty and that option was enabled
 
+}
+
+%new
+- (void)toggleSectionCollapsedAtIndex:(NSInteger)arg1 {
+    
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    Section *section = [recentlyAddedManager sectionAtIndex:arg1];
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+
+    // track the current collapsed state of the section, then flip it
+    BOOL isCollapsedCurrentState = section.isCollapsed;
+    section.collapsed = !isCollapsedCurrentState;
+
+    NSMutableArray *albumIndexPaths = [NSMutableArray array];
+    NSInteger numAlbums = [recentlyAddedManager numberOfAlbumsInSection:arg1];
+
+    // generate an index path for every album in the section
+    for (NSInteger i = 0; i < numAlbums; i++) {
+        [albumIndexPaths addObject:[NSIndexPath indexPathForItem:i inSection:arg1]];
+    }
+
+    // either insert or delete all the album cells from the collection view
+    if (isCollapsedCurrentState) {
+        [collectionView insertItemsAtIndexPaths:albumIndexPaths];
+    } else {
+        [collectionView deleteItemsAtIndexPaths:albumIndexPaths];
+    }
+
+    // TODO:
+    // why do i do this rather than just getting the section title view directly?? TODO: could also just pass the view as an argument
+    for (UIView *view in [collectionView visibleSupplementaryViewsOfKind:UICollectionElementKindSectionHeader]) {
+        
+        if ([view isKindOfClass:objc_getClass("MusicApplication.TitleSectionHeaderView")]) {
+            TitleSectionHeaderView *sectionHeaderView = (TitleSectionHeaderView *)view;
+
+            if ([[sectionHeaderView identifier] isEqualToString:section.identifier]) {
+                [view setNeedsLayout];
+            }
+        }
+    }
 }
 
 %new
@@ -626,12 +804,10 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 %hook UICollectionView
 
 - (void)setContentSize:(CGRect)arg1 {
-    //HBLogWarn(@"UICollectionView: %p setContentSize: %@", self, NSStringFromCGRect(arg1));
     %orig;
 }
 
 - (void)moveItemAtIndexPath:(NSIndexPath *)arg1 toIndexPath:(NSIndexPath *)arg2 {
-    // HBLogWarn(@"UICollectionView moveItemAtIndexPath: <%ld,%ld> toIndexPath: <%ld,%ld>", arg1.section, arg1.item, arg2.section, arg2.item);
     %orig;
 }
 

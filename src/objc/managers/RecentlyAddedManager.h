@@ -26,6 +26,7 @@
 - (void)moveAlbumAtAdjustedIndexPath:(NSIndexPath *)sourceIndexPath toAdjustedIndexPath:(NSIndexPath *)destIndexPath;
 
 - (Section *)sectionAtIndex:(NSInteger)arg1;
+- (Section *)sectionWithIdentifier:(NSString *)arg1;
 - (Album *)albumWithIdentifier:(NSString *)arg1;
 - (Album *)albumAtAdjustedIndexPath:(NSIndexPath *)arg1;
 - (NSArray *)pinnedAlbums;

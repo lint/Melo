@@ -77,10 +77,10 @@
         // insert every album into the array at its real index
         for (Section *section in _sections) {
 
-            [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
+            // [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
 
             for (Album *album in section.albums) {
-                [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
+                // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
                 realAlbumOrder[album.realIndex] = album;
             }
         }
@@ -90,10 +90,10 @@
         // insert every album into the array
         for (Section *section in _sections) {
 
-            [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
+            // [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
 
             for (Album *album in section.albums) {
-                [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
+                // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
                 [realAlbumOrder addObject:album];
             }
         }
@@ -112,19 +112,19 @@
     NSMutableArray *recreatedAlbumIdentOrder = [NSMutableArray array];
     NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
 
-    [[Logger sharedInstance] logString:@"here pre array compare"];
+    // [[Logger sharedInstance] logString:@"here pre array compare"];
     
     for (Album *album in recreatedAlbumOrder) {
-        [[Logger sharedInstance] logString:[NSString stringWithFormat:@"orig order album: %@", album]];
+        // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"orig order album: %@", album]];
         [recreatedAlbumIdentOrder addObject:album.identifier];
     }
 
     for (Album *album in realAlbumOrder) {
-        [[Logger sharedInstance] logString:[NSString stringWithFormat:@"new order album: %@", album]];
+        // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"new order album: %@", album]];
         [realAlbumIdentOrder addObject:album.identifier];
     }
 
-    [[Logger sharedInstance] logString:@"here post array compare"];
+    // [[Logger sharedInstance] logString:@"here post array compare"];
 
     // process the new order if it has changed
     if (![realAlbumIdentOrder isEqualToArray:recreatedAlbumIdentOrder]) {
@@ -136,7 +136,7 @@
         for (NSString *albumID in recreatedAlbumIdentOrder) {
 
             if (![realAlbumIdentOrder containsObject:albumID]) {
-                [[Logger sharedInstance] logString:[NSString stringWithFormat:@"found album to be removed: %@", albumID]];
+                // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"found album to be removed: %@", albumID]];
                 [self removeAlbumWithIdentifier:albumID];
             }
         }
@@ -157,7 +157,7 @@
             for (Album *pinnedAlbum in pinnedAlbums) {
                 if ([album.identifier isEqualToString:pinnedAlbum.identifier]) {
 
-                    [[Logger sharedInstance] logStringWithFormat:@"matched album in pinned section, album ident: %@", [album identifier]];
+                    // [[Logger sharedInstance] logStringWithFormat:@"matched album in pinned section, album ident: %@", [album identifier]];
 
                     // update the pinned album object
                     pinnedAlbum.artist = album.artist;
@@ -171,7 +171,7 @@
 
             // add any non pinned album to the recent section in the real order
             if (!foundMatch) {
-                [[Logger sharedInstance] logStringWithFormat:@"adding album to recently added section, album ident: %@", [album identifier]];
+                // [[Logger sharedInstance] logStringWithFormat:@"adding album to recently added section, album ident: %@", [album identifier]];
                 [recentSection addAlbum:album];
             }
         }
@@ -303,6 +303,18 @@
     return _sections[arg1];
 }
 
+// return the section with the given identifier
+- (Section *)sectionWithIdentifier:(NSString *)arg1 {
+    
+    for (Section *section in _sections) {
+        if ([section.identifier isEqualToString:arg1]) {
+            return section;
+        }
+    }
+
+    return nil;
+}
+
 // return the total number of albums 
 - (NSInteger)numberOfTotalAlbums {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager: %p - numberOfTotalAlbums", self];
@@ -388,97 +400,104 @@
     // clear any current data
     // if (!_skipLoad) {
 
-        _sections = [NSMutableArray array];
-        _processedRealAlbumOrder = NO;
+    _sections = [NSMutableArray array];
+    _processedRealAlbumOrder = NO;
 
-        NSString *userDefaultsKey = [self userDefaultsKey];
-        MeloManager *meloManager = [MeloManager sharedInstance];
+    NSString *userDefaultsKey = [self userDefaultsKey];
+    MeloManager *meloManager = [MeloManager sharedInstance];
 
-        if ([meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
-            userDefaultsKey = @"MELO_DATA_LIBRARY";
-
-            if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
-                userDefaultsKey = [userDefaultsKey stringByAppendingString:@"_CUSTOM_SECTIONS"];
-            }
-        }
-
-        // load the data from user defaults
-        NSMutableArray *data = [_defaults objectForKey:userDefaultsKey];
-
-        [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
+    if ([meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
+        userDefaultsKey = @"MELO_DATA_LIBRARY";
 
         if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
+            userDefaultsKey = [userDefaultsKey stringByAppendingString:@"_CUSTOM_SECTIONS"];
+        }
+    }
 
-            [[Logger sharedInstance] logString:@"custom sections are enabled"];
+    // load the data from user defaults
+    NSMutableArray *data = [_defaults objectForKey:userDefaultsKey];
 
-            NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
-            NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
-            NSMutableArray *defaultsSections = [NSMutableArray array];
-            NSMutableArray *finalSections = [NSMutableArray array];
+    [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 
-            if (data) {
-                // create section object for every loaded dictioanry
-                for (NSInteger i = 0; i < [data count]; i++) {
-                    Section *section = [[Section alloc] initWithDictionary:data[i]];
-                    [defaultsSections addObject:section];
-                }
-            }
+    if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
 
-            for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
+        [[Logger sharedInstance] logString:@"custom sections are enabled"];
 
-                NSDictionary *sectionInfo = customSectionsInfoFromPrefs[i];
-                BOOL foundSection = NO;
-                
-                for (Section *section in defaultsSections) {
-                    if ([section.identifier isEqualToString:sectionInfo[@"identifier"]]) {
-                        section.title = sectionInfo[@"title"];
-                        section.subtitle = sectionInfo[@"subtitle"];
+        NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
+        NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
+        NSMutableArray *defaultsSections = [NSMutableArray array];
+        NSMutableArray *finalSections = [NSMutableArray array];
 
-                        [finalSections addObject:section];
-                        foundSection = YES;
-                        break;
-                    }
-                }
-
-                if (!foundSection) {
-                    Section *section = [[Section alloc] initWithDictionary:sectionInfo];
-                    [finalSections addObject:section];
-                }
-            }
-
-            Section *recentSection = [Section emptyRecentSection];
-
-            if ([meloManager prefsBoolForKey:@"renameRecentlyAddedSectionEnabled"] && customRecentlyAddedInfoFromPrefs) {
-                recentSection.title = customRecentlyAddedInfoFromPrefs[@"title"];
-                recentSection.subtitle = customRecentlyAddedInfoFromPrefs[@"subtitle"];
-            }
-
-            [finalSections addObject:recentSection];
-            _sections = finalSections;
-
-        } else {
-
-            [[Logger sharedInstance] logString:@"custom sections are disabled"];
-
-            // create section and album objects
-            if (data) {
-
-                // create section object for every loaded dictioanry
-                for (int i = 0; i < [data count]; i++) {
-                    Section *section = [[Section alloc] initWithDictionary:data[i]];
-                    [_sections addObject:section];
-                }
-
-                // create empty recent section
-                Section *recentSection = [Section emptyRecentSection];
-                [_sections addObject:recentSection];
-            } else {
-
-                // adding two sections for now...
-                [_sections addObject:[Section emptyPinnedSection]];
-                [_sections addObject:[Section emptyRecentSection]];
+        if (data) {
+            // create section object for every loaded dictioanry
+            for (NSInteger i = 0; i < [data count]; i++) {
+                Section *section = [[Section alloc] initWithDictionary:data[i]];
+                [defaultsSections addObject:section];
             }
         }
+
+        for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
+
+            NSDictionary *sectionInfo = customSectionsInfoFromPrefs[i];
+            BOOL foundSection = NO;
+            
+            for (Section *section in defaultsSections) {
+                if ([section.identifier isEqualToString:sectionInfo[@"identifier"]]) {
+                    section.title = sectionInfo[@"title"];
+                    section.subtitle = sectionInfo[@"subtitle"];
+
+                    [finalSections addObject:section];
+                    foundSection = YES;
+                    break;
+                }
+            }
+
+            if (!foundSection) {
+                Section *section = [[Section alloc] initWithDictionary:sectionInfo];
+                [finalSections addObject:section];
+            }
+        }
+
+        Section *recentSection = [Section emptyRecentSection];
+
+        if ([meloManager prefsBoolForKey:@"renameRecentlyAddedSectionEnabled"] && customRecentlyAddedInfoFromPrefs) {
+            recentSection.title = customRecentlyAddedInfoFromPrefs[@"title"];
+            recentSection.subtitle = customRecentlyAddedInfoFromPrefs[@"subtitle"];
+        }
+
+        [finalSections addObject:recentSection];
+        _sections = finalSections;
+
+    } else {
+
+        [[Logger sharedInstance] logString:@"custom sections are disabled"];
+
+        // create section and album objects
+        if (data) {
+
+            // create section object for every loaded dictioanry
+            for (int i = 0; i < [data count]; i++) {
+                Section *section = [[Section alloc] initWithDictionary:data[i]];
+                [_sections addObject:section];
+            }
+
+            // create empty recent section
+            Section *recentSection = [Section emptyRecentSection];
+            [_sections addObject:recentSection];
+        } else {
+
+            // adding two sections for now...
+            [_sections addObject:[Section emptyPinnedSection]];
+            [_sections addObject:[Section emptyRecentSection]];
+        }
+    }
+
+    // make sure all sections are not collapsed if it's disabled
+    if (![meloManager prefsBoolForKey:@"collapsibleSectionsEnabled"]) {
+        for (Section *section in _sections) {
+            section.collapsed = NO;
+        }
+    }
 
         
     // }

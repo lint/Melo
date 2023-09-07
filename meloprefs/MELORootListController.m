@@ -50,13 +50,36 @@
 
 	[settings setObject:value forKey:specifier.properties[@"key"]];
 	[settings writeToURL:url error:nil];
-	// CFStringRef notificationName = (__bridge CFStringRef)specifier.properties[@"PostNotification"];
 
-	// if (notificationName) {
-	// 	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), notificationName, NULL, NULL, YES);
-	// }
+	CFStringRef notificationName = (__bridge CFStringRef)specifier.properties[@"PostNotification"];
+
+	if (notificationName) {
+		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), notificationName, NULL, NULL, YES);
+	}
 
 	// [self changeEnabled:value && [value boolValue] forCellDependentOnKey:[specifier propertyForKey:@"key"]];
+}
+
+- (PSSpecifier *)specifierForKey:(NSString *)arg1 {
+	for (PSSpecifier *specifier in _specifiers) {
+		if ([arg1 isEqualToString:specifier.properties[@"key"]]) {
+			return specifier;
+		}
+	}
+
+	return nil;
+}
+
+- (void)updateDependentSpecifiers {
+
+	for (PSSpecifier *specifier in _specifiers) {
+
+		PSSpecifier *parentSpecifier = [self specifierForKey:specifier.properties[@"parentKey"]];
+
+		if (parentSpecifier) {
+			
+		}
+	}
 }
 
 - (void)viewWillAppear:(BOOL)animated {

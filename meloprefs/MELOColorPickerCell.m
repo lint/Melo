@@ -109,11 +109,11 @@
 - (NSDictionary *)colorToDict:(UIColor *)color {
 	const CGFloat *components = CGColorGetComponents(color.CGColor);
 	
-    NSMutableDictionary *colorDict = [NSMutableDictionary new];
-	[colorDict setObject:[NSNumber numberWithFloat:components[0]] forKey:@"red"];
-	[colorDict setObject:[NSNumber numberWithFloat:components[1]] forKey:@"green"];
-	[colorDict setObject:[NSNumber numberWithFloat:components[2]] forKey:@"blue"];
-    [colorDict setObject:[NSNumber numberWithFloat:components[3]] forKey:@"alpha"];
+    NSMutableDictionary *colorDict = [NSMutableDictionary dictionary];
+	colorDict[@"red"] = [NSNumber numberWithFloat:components[0]];
+	colorDict[@"green"] = [NSNumber numberWithFloat:components[1]];
+	colorDict[@"blue"] = [NSNumber numberWithFloat:components[2]];
+	colorDict[@"alpha"] = [NSNumber numberWithFloat:components[3]];
 
 	return colorDict;
 }
