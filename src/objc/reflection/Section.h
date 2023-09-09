@@ -11,7 +11,7 @@
 @property(strong, nonatomic) NSString *subtitle;
 @property(strong, nonatomic) NSMutableArray<Album *> *albums;
 @property(assign, nonatomic, getter=isCollapsed) BOOL collapsed;
-@property(assign, nonatomic, getter=isVisible) BOOL visible;
+@property(assign, nonatomic, getter=isVisible) BOOL visible; // TODO: remove this
 
 - (instancetype)init;
 - (instancetype)initWithDictionary:(NSDictionary *)arg1;

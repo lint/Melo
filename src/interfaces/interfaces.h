@@ -1,3 +1,6 @@
 #import "TitleSectionHeaderView.h"
 #import "MPResources.h"
 #import "LibraryRecentlyAddedViewController.h"
+#import "VerticalStackScrollView.h"
+#import "AlbumCell.h"
+#import "extensions.h"

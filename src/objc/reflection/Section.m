@@ -176,7 +176,9 @@
 
 // creates a section with no albums for the recently added section
 + (instancetype)emptyRecentSection {
-    return [[Section alloc] initWithIdentifier:@"MELO_RECENTLY_ADDED_SECTION" title:@"Recently Added" subtitle:nil];
+    // return [[Section alloc] initWithIdentifier:@"MELO_RECENTLY_ADDED_SECTION" title:@"Recently Added" subtitle:nil];
+    // TODO: just set title to nil? that way it's automatically localized and not overwritten?
+    return [[Section alloc] initWithIdentifier:@"MELO_RECENTLY_ADDED_SECTION" title:nil subtitle:nil];
 }
 
 // creates a "pinned" section with no albums

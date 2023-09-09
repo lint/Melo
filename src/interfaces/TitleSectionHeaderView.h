@@ -14,6 +14,7 @@
 
 // custom elements
 @property(strong, nonatomic) UIImageView *chevronIndicatorView;
+@property(strong, nonatomic) UIView *emptyInsertionView;
 @property(strong, nonatomic) NSString *identifier;
 @property(strong, nonatomic) UITapGestureRecognizer *tapGesture;
 @property(strong, nonatomic) LibraryRecentlyAddedViewController *recentlyAddedViewController;
@@ -23,4 +24,8 @@
 - (BOOL)isCollapsed;
 - (void)createCollapseItems;
 - (void)handleTapGesture:(UIGestureRecognizer *)arg1;
+- (void)createEmptyInsertionView;
+- (void)transitionCollapseItemsForWiggleMode:(BOOL)inWiggleMode;
+- (void)animateEmptySectionInsertionFlash;
+- (void)highlightEmptyInsertionView:(BOOL)arg1;
 @end

@@ -111,6 +111,25 @@
 
         [_buttonMap setObject:button forKey:ident];
     }
+
+    // add wiggle mode action if possible
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"showWiggleModeActionEnabled"]) {
+        // TODO: should i check prefs here? not that it really matters
+
+        NSString *title = @"Wiggle Mode";
+        NSString *ident = @"MELO_ACTION_WIGGLE";
+
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        [button addTarget:self action:@selector(handleButtonPress:) forControlEvents:UIControlEventTouchUpInside];
+        [button setTitle:title forState:UIControlStateNormal];
+        button.backgroundColor = [UIColor systemPinkColor];
+        button.frame = CGRectMake(20, currButtonYOrigin, buttonWidth, buttonHeight);
+        button.layer.cornerRadius = 10;
+        currButtonYOrigin += buttonOffset;
+        [view addSubview:button];
+
+        [_buttonMap setObject:button forKey:ident];   
+    }
 }
 
 - (void)handleButtonPress:(UIButton *)sender {
@@ -136,6 +155,8 @@
         [_libraryRecentlyAddedViewController handleShiftAction:YES];
     } else if ([ident isEqualToString:@"MELO_ACTION_SHIFT_RIGHT"]) {
         [_libraryRecentlyAddedViewController handleShiftAction:NO];
+    } else if ([ident isEqualToString:@"MELO_ACTION_WIGGLE"]) {
+        [_libraryRecentlyAddedViewController toggleWiggleMode];
     } else {
         NSInteger sectionIndex = [_recentlyAddedManager sectionIndexForIdentifier:ident];
         [_libraryRecentlyAddedViewController handleMoveToSectionAction:sectionIndex];

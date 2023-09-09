@@ -204,6 +204,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>preserveCollapsedStateEnabled</string>
+			<key>label</key>
+			<string>Preserve Collapsed State</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Theming</string>
@@ -316,7 +330,7 @@
 			<key>key</key>
 			<string>allActionsInSubmenuEnabled</string>
 			<key>label</key>
-			<string>Actions Submenu</string>
+			<string>Place Actions in Submenu</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -345,6 +359,20 @@
 			<string>showLeftRightActionsEnabled</string>
 			<key>label</key>
 			<string>Show Shift Left/Right Actions</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>showWiggleModeActionEnabled</string>
+			<key>label</key>
+			<string>Show Wiggle Mode Action</string>
 		</dict>
 		<dict>
 			<key>cell</key>

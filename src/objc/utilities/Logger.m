@@ -110,6 +110,23 @@ static Logger *sharedLogger;
     [self logString:formattedStr];
 }
 
+// append a given string to the log file
++ (void)logString:(NSString *)arg1 {
+    [[Logger sharedInstance] logString:arg1];
+}
+
+// intermediate method to directly take string format arguments
++ (void)logStringWithFormat:(NSString *)arg1, ... {
+
+    
+    va_list va;
+    va_start(va, arg1);    
+    NSString *formattedStr = [[NSString alloc] initWithFormat:arg1 arguments:va];
+    va_end(va);
+
+    [[Logger sharedInstance] logString:formattedStr];
+}
+
 - (BOOL)test {
     return _shouldLogColorInfo;
 }

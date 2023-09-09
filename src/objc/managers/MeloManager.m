@@ -7,10 +7,10 @@ static MeloManager *sharedMeloManager;
 
 @implementation MeloManager
 
-- (int)test {
-    int (^block)(void) = ^{return 100;};
-    return block();
-}
+// - (int)test {
+//     int (^block)(void) = ^{return 100;};
+//     return block();
+// }
 
 // loads the object if you don't need to use it right away
 + (void)load {
@@ -41,10 +41,14 @@ static MeloManager *sharedMeloManager;
 
     if ((self = [super init])) {
 
+        [Logger logString:@"MeloManager - init"];
+
         [self loadPrefs];
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         _recentlyAddedManagers = [NSMutableArray array];
         self.shouldAddCustomContextActions = NO;
+
+        [Logger logStringWithFormat:@"defaults: %@", _defaults];
 
         [self checkClearPins];
     }
@@ -65,6 +69,9 @@ static MeloManager *sharedMeloManager;
 // load the saved preferences from file
 - (void)loadPrefs {
     _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
+
+    [[Logger sharedInstance] logStringWithFormat:@"MeloManager - loadPrefs, prefs result: %@", _prefs];
+
     NSDictionary *defaultPrefs = @{
         @"enabled": @YES,
         @"customNumColumnsEnabled": @YES,
@@ -86,7 +93,9 @@ static MeloManager *sharedMeloManager;
         @"customAlbumCellSpacingEnabled": @NO,
         @"customAlbumCellSpacing": @5,
         @"renameRecentlyAddedSectionEnabled": @NO,
-        @"collapsibleSectionsEnabled": @YES
+        @"collapsibleSectionsEnabled": @YES,
+        @"showWiggleModeActionEnabled": @YES,
+        @"preserveCollapsedStateEnabled": @YES
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
@@ -111,11 +120,13 @@ static MeloManager *sharedMeloManager;
 
     NSString *clearPinsKey = @"MELO_CLEAR_PINS_KEY";
     NSString *savedID = [_defaults objectForKey:clearPinsKey];
+    [Logger logString:@"here"];
     NSString *prefsID = [self prefsObjectForKey:clearPinsKey];
 
     [[Logger sharedInstance] logStringWithFormat:@"savedClearPinsID: %@, preferencesClearPinsID: %@", savedID, prefsID];
 
     // check if the preference clear pins key has changed
+    // TODO: this is probably redudant
     BOOL shouldClearPins = ((prefsID && !savedID) || (prefsID && savedID && ![prefsID isEqualToString:savedID]));
     if (!shouldClearPins) {
         return;

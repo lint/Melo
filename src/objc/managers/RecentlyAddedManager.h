@@ -34,7 +34,7 @@
 - (NSInteger)numberOfSections;
 - (NSInteger)numberOfAlbumsInSection:(NSInteger)arg1;
 - (NSInteger)numberOfTotalAlbums;
-- (NSInteger)sectionIndexForIdentifier:(NSString *)arg1;
+- (NSInteger)sectionIndexForIdentifier:(NSString *)arg1; // TODO: rename this to indexForSectionWithIdentifier?
 - (NSString *)userDefaultsKey;
 - (void)saveData;
 - (void)loadData;

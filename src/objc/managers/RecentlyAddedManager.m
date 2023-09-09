@@ -381,12 +381,25 @@
     [[Logger sharedInstance] logStringWithFormat:@"user defaults key: %@", [self userDefaultsKey]];
 
     NSMutableArray *data = [NSMutableArray array];
+    NSInteger numberOfSections = [self numberOfSections];
 
-    // iterate over every section except the recent section
-    for (int i = 0; i < [self numberOfSections] - 1; i++) {
+    // iterate over every section
+    for (NSInteger i = 0; i < numberOfSections ; i++) {
         Section *section = _sections[i];
-        [data addObject:[section toDictionary]];
-        [[Logger sharedInstance] logStringWithFormat:@"section: %@", [section toDictionary]];
+        NSMutableDictionary *sectionDict = [NSMutableDictionary dictionaryWithDictionary:[section toDictionary]];
+
+        // do not save the albums of the recently added section
+        if (i == numberOfSections - 1) {
+            sectionDict[@"albums"] = @[];
+        }
+
+        if (![[MeloManager sharedInstance] prefsBoolForKey:@"preserveCollapsedStateEnabled"]) {
+            sectionDict[@"collapsed"] = @NO;
+        }
+
+        [data addObject:sectionDict];
+
+        // [[Logger sharedInstance] logStringWithFormat:@"section: %@", [section toDictionary]];
     }
 
     [_defaults setObject:data forKey:[self userDefaultsKey]];
@@ -406,6 +419,9 @@
     NSString *userDefaultsKey = [self userDefaultsKey];
     MeloManager *meloManager = [MeloManager sharedInstance];
 
+    // NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
+    // NSString *localizedRecentlyAddedTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
+
     if ([meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
         userDefaultsKey = @"MELO_DATA_LIBRARY";
 
@@ -417,30 +433,35 @@
     // load the data from user defaults
     NSMutableArray *data = [_defaults objectForKey:userDefaultsKey];
 
+    // load custom section information from preferences
+    NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
+    NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
+
+    NSMutableArray *finalSections = [NSMutableArray array];
+    NSMutableArray *defaultsSections = [NSMutableArray array];
+
+    // check if data was able to be loaded
+    if (data) {
+        // create section object for every loaded dictioanry
+        for (NSInteger i = 0; i < [data count]; i++) {
+            Section *section = [[Section alloc] initWithDictionary:data[i]];
+            [defaultsSections addObject:section];
+        }
+    }
     [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 
+    // custom sections are enabled - sync custom sections from prefs and user defaults
     if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
 
         [[Logger sharedInstance] logString:@"custom sections are enabled"];
 
-        NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
-        NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
-        NSMutableArray *defaultsSections = [NSMutableArray array];
-        NSMutableArray *finalSections = [NSMutableArray array];
-
-        if (data) {
-            // create section object for every loaded dictioanry
-            for (NSInteger i = 0; i < [data count]; i++) {
-                Section *section = [[Section alloc] initWithDictionary:data[i]];
-                [defaultsSections addObject:section];
-            }
-        }
-
+        // iterate over every custom section loaded from preferences
         for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
 
             NSDictionary *sectionInfo = customSectionsInfoFromPrefs[i];
             BOOL foundSection = NO;
             
+            // iterate over every section loaded from defaults until a match is found
             for (Section *section in defaultsSections) {
                 if ([section.identifier isEqualToString:sectionInfo[@"identifier"]]) {
                     section.title = sectionInfo[@"title"];
@@ -452,56 +473,92 @@
                 }
             }
 
+            // no match found, meaning the section was not previously saved, create a new one
             if (!foundSection) {
                 Section *section = [[Section alloc] initWithDictionary:sectionInfo];
                 [finalSections addObject:section];
             }
         }
 
-        Section *recentSection = [Section emptyRecentSection];
-
-        if ([meloManager prefsBoolForKey:@"renameRecentlyAddedSectionEnabled"] && customRecentlyAddedInfoFromPrefs) {
-            recentSection.title = customRecentlyAddedInfoFromPrefs[@"title"];
-            recentSection.subtitle = customRecentlyAddedInfoFromPrefs[@"subtitle"];
-        }
-
-        [finalSections addObject:recentSection];
-        _sections = finalSections;
-
+    // custom sections are disabled - check if a pinned section exists
     } else {
 
         [[Logger sharedInstance] logString:@"custom sections are disabled"];
 
-        // create section and album objects
-        if (data) {
+        // // create section and album objects
+        // if (data) {
 
-            // create section object for every loaded dictioanry
-            for (int i = 0; i < [data count]; i++) {
-                Section *section = [[Section alloc] initWithDictionary:data[i]];
-                [_sections addObject:section];
+        //     // create section object for every loaded dictioanry
+        //     for (int i = 0; i < [data count]; i++) {
+        //         Section *section = [[Section alloc] initWithDictionary:data[i]];
+        //         [_sections addObject:section];
+        //     }
+
+        //     // create empty recent section
+        //     Section *recentSection = [Section emptyRecentSection];
+        //     [_sections addObject:recentSection];
+        // } else {
+
+        //     // adding two sections for now...
+        //     [_sections addObject:[Section emptyPinnedSection]];
+        //     [_sections addObject:[Section emptyRecentSection]];
+        // }
+
+        NSInteger numNonRecentSections = 0;
+
+        for (Section *section in defaultsSections) {
+            if (![@"MELO_RECENTLY_ADDED_SECTION" isEqualToString:section.identifier]) {
+                numNonRecentSections++;
             }
+        }
 
-            // create empty recent section
-            Section *recentSection = [Section emptyRecentSection];
-            [_sections addObject:recentSection];
+        if (numNonRecentSections == 0) {
+            [finalSections addObject:[Section emptyPinnedSection]];
         } else {
-
-            // adding two sections for now...
-            [_sections addObject:[Section emptyPinnedSection]];
-            [_sections addObject:[Section emptyRecentSection]];
+            [finalSections addObjectsFromArray:defaultsSections];
         }
     }
 
+    // get the section object for the recently added section
+    Section *recentSection;
+
+    // try to get the recently added section
+    for (Section *section in defaultsSections) {
+        if ([@"MELO_RECENTLY_ADDED_SECTION" isEqualToString:section.identifier]) {
+            recentSection = section;
+            break;
+        }
+    }
+
+    // create new recently added section if it was not previously saved
+    if (!recentSection) {
+        recentSection = [Section emptyRecentSection];
+    }
+
+    // set custom title and subtitle for recently added section if enabled and found
+    if ([meloManager prefsBoolForKey:@"customSectionsEnabled"] && 
+        [meloManager prefsBoolForKey:@"renameRecentlyAddedSectionEnabled"] && customRecentlyAddedInfoFromPrefs) {
+        
+        recentSection.title = customRecentlyAddedInfoFromPrefs[@"title"];
+        recentSection.subtitle = customRecentlyAddedInfoFromPrefs[@"subtitle"];
+    } else {
+        recentSection.title = nil;
+        recentSection.subtitle = nil;
+    }
+
+    [finalSections addObject:recentSection];
+    _sections = finalSections;
+
     // make sure all sections are not collapsed if it's disabled
-    if (![meloManager prefsBoolForKey:@"collapsibleSectionsEnabled"]) {
+    if (![meloManager prefsBoolForKey:@"collapsibleSectionsEnabled"] || ![meloManager prefsBoolForKey:@"preserveCollapsedStateEnabled"]) {
         for (Section *section in _sections) {
             section.collapsed = NO;
         }
     }
-
         
     // }
 
+    // TODO: (remove this?)
     // first check if custom sections is enabled
     // if not, do what you did above
     // oooo how should I deal with saving and loading and switching between modes...

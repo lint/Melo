@@ -30,6 +30,6 @@
 - (NSDictionary *)colorToDict:(UIColor *)color;
 - (UIColor *)dictToColor:(NSDictionary *)dict;
 
--(int)test;
+// -(int)test;
 
 @end
