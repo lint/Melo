@@ -139,6 +139,7 @@
 
     if (recentlyAddedManager && [recentlyAddedManager isReadyForUse]) {
 
+        UIView *emptyInsertionView = [self emptyInsertionView];
         UIImageView *chevronIndicatorView = [self chevronIndicatorView];
         UIView *titleDrawingView = MSHookIvar<UIView *>(self, "titleTextDrawingView");
         UIView *subtitleDrawingView = MSHookIvar<UIView *>(self, "subtitleTextDrawingView");
@@ -164,13 +165,17 @@
             CGRect imageViewFrame = CGRectMake(imageViewXOrigin, imageViewYOrigin, imageViewSizeVal, imageViewSizeVal);
             chevronIndicatorView.frame = imageViewFrame;
 
-            // [UIView animateWithDuration:0.2 animations:^{
             [UIView beginAnimations:nil context:nil];
             [UIView setAnimationDuration:0.2];
                 chevronIndicatorView.transform = [self isCollapsed] ? CGAffineTransformMakeRotation(0) :  CGAffineTransformMakeRotation(M_PI_2);
             [UIView commitAnimations];
-            // }];
+        }
 
+        if (emptyInsertionView) {
+            //CGRect dragDetectionFrame = CGRectMake(0, titleFrame.origin.y, screenWidth, titleFrame.size.height);
+            //emptyInsertionView.frame = dragDetectionFrame;
+            emptyInsertionView.frame = CGRectMake(0,0, screenWidth, [self frame].size.height);
+            // TODO: just make this equal to the title header view's bounds?
         }
     }
 }
@@ -206,72 +211,50 @@
     }
 
     // animate the indicator changing to the new orientation
-    // [UIView animateWithDuration:0.2 animations:^{
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:0.2];
         [self chevronIndicatorView].transform = wasCollapsed ? CGAffineTransformMakeRotation(M_PI_2) : CGAffineTransformMakeRotation(0);
     [UIView commitAnimations];
-    // }];
 
     // perform additional data and visual updates
     [lravc toggleSectionCollapsedAtIndex:sectionIndex];
 }
 
-// animate a simple flashing highlight of this view that occurs when trying to move an album to an empty section in wiggle mode
+// // animate a simple flashing highlight of this view that occurs when trying to move an album to an empty section in wiggle mode
 %new
 - (void)animateEmptySectionInsertionFlash {
    
-    UIColor *origColor = [(UIView *)self backgroundColor];
+    // UIColor *origColor = [(UIView *)self backgroundColor];
+    UIColor *origColor = [UIColor clearColor];
     UIColor *highlightColor = [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.25];
     NSTimeInterval interval = 0.175;
-    
-    // TODO: is there any alternative to this without blocks? i don't really think so..
-    // there's probably a better way to do this, but
-    // [UIView animateWithDuration:interval animations:^{
-    //     self.backgroundColor = highlightColor;
-    // } completion:^(BOOL finished){
-    //     [UIView animateWithDuration:interval animations:^{
-    //         self.backgroundColor = origColor;
-    //     } completion:^(BOOL finished){
-    //         [UIView animateWithDuration:interval animations:^{
-    //             self.backgroundColor = highlightColor;
-    //         } completion:^(BOOL finished){
-    //             [UIView animateWithDuration:interval animations:^{
-    //                 self.backgroundColor = origColor;
-    //             }];
-    //         }];
-    //     }];
-    // }];
 
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:interval];
-        [self setBackgroundColor:highlightColor];
-    [UIView commitAnimations];
+    UIView *view = [self emptyInsertionView];
 
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:interval];
-        [self setBackgroundColor:origColor];
-    [UIView commitAnimations];
+    NSDictionary *context = @{
+        @"view": view,
+        @"origColor": [ColorUtils colorToDict:origColor],
+        @"highlightColor": [ColorUtils colorToDict:highlightColor],
+        @"interval": [NSNumber numberWithDouble:interval]
+    };
 
-    [UIView beginAnimations:nil context:nil];
+    [UIView beginAnimations:@"MELO_ANIMATION_EMPTY_INSERTION_FLASH_PART_1" context:(__bridge_retained void *)context];
     [UIView setAnimationDuration:interval];
-        [self setBackgroundColor:highlightColor];
-    [UIView commitAnimations];
-
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:interval];
-        [self setBackgroundColor:origColor];
+    [UIView setAnimationDelegate:[[self recentlyAddedViewController] animationManager]];
+    [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+        [view setBackgroundColor:highlightColor];
     [UIView commitAnimations];
 }
 
 %new
 - (void)highlightEmptyInsertionView:(BOOL)shouldHighlight {
-    // [UIView animateWithDuration:0.2 animations:^{
+
+    // TODO: don't default to clearColor? or even tbh remove the empty insertion view and just highlight the title section view itself 
+
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:0.2];
         [self emptyInsertionView].backgroundColor = shouldHighlight ? [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.25] : [UIColor clearColor];
     [UIView commitAnimations];
-    // }];
 }
 
 // enabled / disable or show / hide collapse items when toggling wiggle mode
@@ -282,12 +265,10 @@
     UIImageView *chevronIndicatorView = [self chevronIndicatorView];
     
     if (chevronIndicatorView) {
-        // [UIView animateWithDuration:0.4 animations:^{
         [UIView beginAnimations:nil context:nil];
         [UIView setAnimationDuration:0.4];
             chevronIndicatorView.alpha = inWiggleMode ? 0.0 : 1.0;
         [UIView commitAnimations];
-        // }];
     }
     
     if (tapGesture) {
@@ -303,14 +284,17 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 %property(strong, nonatomic) WiggleModeManager *wiggleModeManager;
 %property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 %property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
+%property(strong, nonatomic) AnimationManager *animationManager;
 
 - (id)init {
 
     RecentlyAddedManager *recentlyAddedManager = [RecentlyAddedManager new];
-    WiggleModeManager *wiggleManager = [WiggleModeManager new];    
+    WiggleModeManager *wiggleManager = [WiggleModeManager new];   
+    AnimationManager *animationManager = [AnimationManager new]; 
 
     [self setRecentlyAddedManager:recentlyAddedManager];
     [self setWiggleModeManager:wiggleManager];
+    [self setAnimationManager:animationManager];
     
     return %orig;
 }
@@ -999,15 +983,17 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         UIView *endWiggleModeView = [wiggleManager endWiggleModeView];
         endWiggleModeView.hidden = NO;
 
-        // [UIView animateWithDuration:0.5 animations:^{
-        [UIView beginAnimations:nil context:nil];
+        NSDictionary *context = @{
+            @"view": [endWiggleModeView superview]
+        };
+
+        [UIView beginAnimations:@"MELO_ANIMATION_END_WIGGLE_VIEW_POP_UP" context:(__bridge_retained void *)context];
         [UIView setAnimationDuration:0.5];
+        [UIView setAnimationDelegate:[self animationManager]];
+        [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
             endWiggleModeView.frame = [endWiggleModeView superview].bounds;
             scrollView.contentInset = UIEdgeInsetsMake(0, 0, endWiggleModeView.frame.size.height, 0); // TODO: is this actually animatable?
         [UIView commitAnimations];
-        // } completion:^(BOOL finished) {
-            [endWiggleModeView superview].userInteractionEnabled = YES;
-        // }];
 
         // creating a gesture recognizer for dragging
         if (![wiggleManager longPressRecognizer]) {
@@ -1046,12 +1032,10 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         }
 
         // disabling navigation bar large title
-        // [UIView animateWithDuration:0.25 animations:^{
         [UIView beginAnimations:nil context:nil];
         [UIView setAnimationDuration:0.25];
             [[self parentViewController] navigationItem].largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
         [UIView commitAnimations];
-        // }];
 
     // wiggle mode turned off
     } else {
@@ -1065,20 +1049,17 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         // removing end wiggle mode button
         UIView *endWiggleModeView = wiggleManager.endWiggleModeView;
 
-        // [UIView animateWithDuration:0.5 animations:^{
-        [UIView beginAnimations:nil context:nil];
+        NSDictionary *context = @{
+            @"endWiggleModeView": endWiggleModeView
+        };
+
+        [UIView beginAnimations:@"MELO_ANIMATION_END_WIGGLE_VIEW_DISMISS" context:(__bridge_retained void *)context];
         [UIView setAnimationDuration:0.5];
+        [UIView setAnimationDelegate:[self animationManager]];
+        [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
             UIView *paletteView = MSHookIvar<UIView *>([self tabBarController], "paletteView");
             endWiggleModeView.frame =  CGRectMake(endWiggleModeView.frame.origin.x, paletteView.frame.origin.y, endWiggleModeView.frame.size.width, endWiggleModeView.frame.size.height);
             scrollView.contentInset = UIEdgeInsetsZero;
-        [UIView commitAnimations];
-
-        [UIView beginAnimations:nil context:nil];
-        [UIView setAnimationDuration:0.1];
-        // } completion:^(BOOL finished) {
-            endWiggleModeView.hidden = YES;
-            [endWiggleModeView superview].userInteractionEnabled = NO;
-        // }];
         [UIView commitAnimations];
 
         // re-enabling large title for navigation bar
@@ -1099,7 +1080,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
             if ([view isKindOfClass:objc_getClass("MusicApplication.TitleSectionHeaderView")]) {
                 TitleSectionHeaderView *headerView = (TitleSectionHeaderView *)view;
-                [headerView transitionCollapseItemsForWiggleMode:YES];
+                [headerView transitionCollapseItemsForWiggleMode:NO];
             }
         }
 
@@ -1156,7 +1137,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         endWiggleButton.frame = CGRectMake(screenSize.width / 8, 10, screenSize.width * .75, 30);
         [endWiggleButton setTitle:@"End Wiggle Mode" forState:UIControlStateNormal];
         [endWiggleButton setTitleColor:[UIColor labelColor] forState:UIControlStateNormal];
-        endWiggleButton.backgroundColor = [meloManager dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
+        endWiggleButton.backgroundColor = [ColorUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
         endWiggleButton.layer.cornerRadius = 8;
         //endWiggleButton.clipsToBounds = YES;
 
@@ -1264,20 +1245,18 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         // hiding the cell and making the text disappear with an animation
         artworkView.alpha = 0;
 
-        // [UIView animateWithDuration:0.2 animations:^{
-        [UIView beginAnimations:nil context:nil];
+        UIView *textStackView = MSHookIvar<UIView *>(cell, "textStackView");
+
+        NSDictionary *context = @{
+            @"cell": cell
+        };
+            
+        [UIView beginAnimations:@"MELO_ANIMATION_HIDE_ALBUM_TEXT_ON_DRAG" context:(__bridge_retained void *)context];
         [UIView setAnimationDuration:0.2];
-            //cell.alpha = 0;
-            MSHookIvar<UIView *>(cell, "textStackView").alpha = 0;
+        [UIView setAnimationDelegate:[self animationManager]];
+        [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+            textStackView.alpha = 0;
         [UIView commitAnimations];
-
-        [UIView beginAnimations:nil context:nil];
-        [UIView setAnimationDuration:0.1];
-
-        // } completion:^(BOOL finished) {
-            cell.hidden = YES;
-        [UIView commitAnimations];
-        // }];
 
         [Logger logString:@"here10"];
 
@@ -1293,14 +1272,13 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         // UIView *twoLineTitleTextDrawView = MSHookIvar<UIView *>(twoLineTitleTextComponent, "textDrawingView");
         // HBLogDebug(@"twoLineTitleTextDrawView: %@", twoLineTitleTextDrawView);
 
-        // [UIView animateWithDuration:0.2 animations:^{
+        // TODO: old code had this animation separated from the previous one, should i keep it that way or combine them?
         [UIView beginAnimations:nil context:nil];
         [UIView setAnimationDuration:0.2];
             draggingWrapperView.transform = CGAffineTransformMakeScale(1.15, 1.15);
         [UIView commitAnimations];
-        // }];
 
-        wiggleManager.endWiggleModeView.userInteractionEnabled = NO;
+        wiggleManager.endWiggleModeView.userInteractionEnabled = NO; // TODO: why do i do this all the way down here?
 
         [Logger logString:@"here11"];
 
@@ -1408,7 +1386,8 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
     NSTimer *emptyInsertTimer = wiggleManager.emptyInsertTimer;
     if (emptyInsertTimer) {
-        if ([emptyInsertTimer isValid]) {
+        // if ([emptyInsertTimer isValid]) {
+        if (emptyInsertTimer.userInfo[@"headerView"]) {
             [emptyInsertTimer.userInfo[@"headerView"] highlightEmptyInsertionView:NO];
         }
     }
@@ -1426,51 +1405,24 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
     CGPoint targetCenter = [[[self parentViewController] view] convertPoint:artworkView.center fromView:cell];
     //CGPoint targetCenter = [[[self parentViewController] view] convertPoint:cell.center fromView:collectionView]; // old code
 
-    // [UIView animateWithDuration:0.4 animations:^{
-    [UIView beginAnimations:nil context:nil];
+    NSDictionary *context = @{
+        @"cell": cell,
+        @"artworkView": artworkView,
+        @"wiggleManager": wiggleManager,
+        @"draggingView": draggingView,
+        @"textStackView": MSHookIvar<UIView *>(cell, "textStackView")
+    };
+
+    [UIView beginAnimations:@"MELO_ANIMATION_END_DRAG" context:(__bridge_retained void *)context];
     [UIView setAnimationDuration:0.4];
+    [UIView setAnimationDelegate:[self animationManager]];
+    [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+    [UIView setAnimationDuration:0.4];
+
         draggingView.center = targetCenter;
         draggingView.transform = CGAffineTransformIdentity;
+
     [UIView commitAnimations];
-    // } completion:^(BOOL finished){
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:0.1]; // TODO: this should actually be instant??
-
-        // old code
-        //if (![draggingIndexPath isEqual:originalIndexPath]) {
-        //    [self collectionView:collectionView moveItemAtIndexPath:draggingIndexPath toIndexPath:[collectionView indexPathForItemAtPoint:arg1]];
-        //}
-
-        UIView *textStackView = MSHookIvar<UIView *>(cell, "textStackView");
-
-
-        cell.hidden = NO;
-        //cell.alpha = 1; // old code
-        artworkView.alpha = 1;
-        textStackView.alpha = 0;
-
-        // [UIView animateWithDuration:0.2 animations:^{
-        [UIView beginAnimations:nil context:nil];
-        [UIView setAnimationDuration:0.2];
-            textStackView.alpha = 1;
-        [UIView commitAnimations];
-        // } completion:^(BOOL finished) {
-        [UIView beginAnimations:nil context:nil];
-        [UIView setAnimationDuration:0.1];
-
-            [draggingView removeFromSuperview];
-
-        [UIView commitAnimations];
-        // }];
-
-        wiggleManager.draggingView = nil;
-        wiggleManager.draggingIndexPath = nil;
-
-        //[collectionView.collectionViewLayout invalidateLayout]; //do I need this? // old code
-    // }];
-    [UIView commitAnimations];
-
-    wiggleManager.endWiggleModeView.userInteractionEnabled = YES;
 
     [recentlyAddedManager saveData];
 }
@@ -1935,7 +1887,7 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
         if (name && [pinkName isEqualToString:name]) {
             
             // set the custom tint color
-            UIColor *color = [meloManager dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
+            UIColor *color = [ColorUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
 
             if (color) {
                 %orig(color);

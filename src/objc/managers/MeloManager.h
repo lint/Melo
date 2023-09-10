@@ -27,9 +27,6 @@
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender;
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
 
-- (NSDictionary *)colorToDict:(UIColor *)color;
-- (UIColor *)dictToColor:(NSDictionary *)dict;
-
 // -(int)test;
 
 @end

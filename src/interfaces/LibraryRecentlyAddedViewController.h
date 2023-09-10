@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 
 // forward declaration
-@class RecentlyAddedManager, WiggleModeManager;
+@class RecentlyAddedManager, WiggleModeManager, AnimationManager;
 
 @interface LibraryRecentlyAddedViewController : UIViewController
 
@@ -10,6 +10,7 @@
 @property(strong, nonatomic) WiggleModeManager *wiggleModeManager;
 @property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 @property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
+@property(strong, nonatomic) AnimationManager *animationManager;
 
 // custom methods
 - (void)checkAlbumOrder;
