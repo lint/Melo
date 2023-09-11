@@ -95,7 +95,8 @@ static MeloManager *sharedMeloManager;
         @"renameRecentlyAddedSectionEnabled": @NO,
         @"collapsibleSectionsEnabled": @YES,
         @"showWiggleModeActionEnabled": @YES,
-        @"preserveCollapsedStateEnabled": @YES
+        @"preserveCollapsedStateEnabled": @YES,
+        @"affectAlbumPagesEnabled": @YES
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];

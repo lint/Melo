@@ -29,12 +29,15 @@
 // changes the number of columns in UICollectionViews
 - (void)setItemSize:(CGSize)arg1 {
 
-    // so the cell size will only be applied to albums in LibraryRecentlyAddedViewController
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    // needed to check if the album layout is for certain classes
     id dataSource = [[self collectionView] dataSource];
+
+    // TODO: you can definitley condense this / just make it better
 
     if ([dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
 
-        MeloManager *meloManager = [MeloManager sharedInstance];
         CGSize size;
 
         if ([meloManager prefsBoolForKey:@"customNumColumnsEnabled"]) {
@@ -51,6 +54,27 @@
         }
 
         %orig(size);
+    } else if ([meloManager prefsBoolForKey:@"affectAlbumPagesEnabled"] && 
+        ([dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
+        [dataSource isKindOfClass:objc_getClass("MusicApplication.ArtistViewController")])) {
+
+        CGSize size;
+
+        if ([meloManager prefsBoolForKey:@"customNumColumnsEnabled"]) {
+
+            NSInteger numColumns = [[meloManager prefsObjectForKey:@"customNumColumns"] integerValue];
+            NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
+
+            float albumWidth = floor((screenWidth - 20 * 2 - [meloManager minimumCellSpacing] * (numColumns - 1)) / numColumns);
+            float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+
+            size = [meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] ? CGSizeMake(albumWidth, albumWidth) : CGSizeMake(albumWidth, albumHeight); 
+        } else {
+            size = [meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] ? CGSizeMake(arg1.width, arg1.width) : arg1;
+        }
+
+        %orig(size);
+
     } else {
         %orig;
     }
@@ -1820,8 +1844,14 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
     id dataSource = [[self _collectionView] dataSource];
     // BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")] || ([apManager prefsBoolForKey:@"affectAlbumsPagesEnabled"] && ([dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || [dataSource isKindOfClass:objc_getClass("MusicApplication.ArtistViewController")]));
-    BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]
-        && [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
+    // BOOL shouldChangeCornerRadius = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]
+    //     && [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
+    
+    BOOL shouldChangeCornerRadius = [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"] && 
+    ([dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")] || 
+    ([meloManager prefsBoolForKey:@"affectAlbumPagesEnabled"] && 
+    ([dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] ||
+    [dataSource isKindOfClass:objc_getClass("MusicApplication.ArtistViewController")])));
 
     if (shouldChangeCornerRadius) {
 
@@ -1948,6 +1978,48 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
 
 %end
 
+%hook AlbumsViewController
+
+- (id)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
+
+    // APManager *apManager = [APManager sharedInstance];
+    AlbumCell *orig = %orig;
+
+    //if ([apManager isReadyForUse]) {
+        // if ([apManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [apManager prefsBoolForKey:@"affectAlbumsPagesEnabled"]) {
+        //     [MSHookIvar<id>(orig, "textStackView") setHidden:YES];
+        // }
+    //}
+
+    return orig;
+}
+
+%new
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)section {
+    return [[MeloManager sharedInstance] minimumCellSpacing];
+}
+
+%new
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)section {
+    return [[MeloManager sharedInstance] minimumCellSpacing];
+}
+
+%end
+
+%hook ArtistViewController
+
+%new
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)section {
+    return [[MeloManager sharedInstance] minimumCellSpacing];
+}
+
+%new
+- (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)collectionViewLayout minimumLineSpacingForSectionAtIndex:(NSInteger)section {
+    return [[MeloManager sharedInstance] minimumCellSpacing];
+}
+
+%end
+
 %ctor {
 
     MeloManager *meloManager = [MeloManager sharedInstance];
@@ -1957,7 +2029,9 @@ static LibraryRecentlyAddedViewController *currentLRAVC;
             TitleSectionHeaderView = objc_getClass("MusicApplication.TitleSectionHeaderView"),
             ArtworkPrefetchingController = objc_getClass("MusicApplication.ArtworkPrefetchingController"),
             AlbumCell = objc_getClass("MusicApplication.AlbumCell"),
-            VerticalStackScrollView = objc_getClass("_TtCC16MusicApplication27VerticalStackViewController10ScrollView")
+            VerticalStackScrollView = objc_getClass("_TtCC16MusicApplication27VerticalStackViewController10ScrollView"),
+            AlbumsViewController = objc_getClass("MusicApplication.AlbumsViewController"),
+            ArtistViewController = objc_getClass("MusicApplication.ArtistViewController")
         );
     }
 }
