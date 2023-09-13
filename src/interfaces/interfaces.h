@@ -4,3 +4,4 @@
 #import "VerticalStackScrollView.h"
 #import "AlbumCell.h"
 #import "extensions.h"
+#import "macros.h"

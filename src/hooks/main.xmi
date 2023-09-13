@@ -1,0 +1,24 @@
+
+#import <UIKit/UIKit.h>
+#import "hooks.h"
+#import "../objc/objc_classes.h"
+#import "../interfaces/interfaces.h"
+
+// add hooks to main file to be compiled
+#import "Layout.xm"
+#import "WiggleMode.xm"
+#import "Pinning.xm"
+#import "Theming.xm"
+
+// main constructor for melo
+%ctor {
+    
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    if ([meloManager prefsBoolForKey:@"enabled"]) {
+        InitLayout();
+        InitWiggleMode();
+        InitPinning();
+        InitTheming();
+    }
+}

@@ -96,7 +96,11 @@ static MeloManager *sharedMeloManager;
         @"collapsibleSectionsEnabled": @YES,
         @"showWiggleModeActionEnabled": @YES,
         @"preserveCollapsedStateEnabled": @YES,
-        @"affectAlbumPagesEnabled": @YES
+        @"affectAlbumPagesEnabled": @YES,
+        @"wiggleModeHooksEnabled": @YES,
+        @"themingHooksEnabled": @YES,
+        @"pinningHooksEnabled": @YES,
+        @"layoutHooksEnabled": @YES
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
@@ -104,7 +108,7 @@ static MeloManager *sharedMeloManager;
 }
 
 // returns the spacing between album cells 
-- (CGFloat)minimumCellSpacing {
+- (CGFloat)collectionViewCellSpacing {
     NSInteger numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
 
     if ([self prefsBoolForKey:@"customAlbumCellSpacingEnabled"]) {
@@ -112,6 +116,17 @@ static MeloManager *sharedMeloManager;
     } else {
         return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - numColumns) / 10 * 2.5 + 5 : 20;
     }
+}
+
+// returns the size of each album in a collection view to change the number of displayed columns
+- (CGSize)collectionViewItemSize {
+    NSInteger numColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? [[self prefsObjectForKey:@"customNumColumns"] integerValue] : 2;
+    NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
+
+    float albumWidth = floor((screenWidth - 20 * 2 - [self collectionViewCellSpacing] * (numColumns - 1)) / numColumns);
+    float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+
+    return [self prefsBoolForKey:@"hideAlbumTextEnabled"] ? CGSizeMake(albumWidth, albumWidth) : CGSizeMake(albumWidth, albumHeight);
 }
 
 // check preferences for if the pinned albums should be cleared
