@@ -14,6 +14,8 @@
     
     if ((self = [super init])) {
 
+        [Logger logStringWithFormat:@"RecentlyAddedManager: %p - init", self];
+
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         _skipLoad = NO;
 
@@ -54,7 +56,6 @@
     }
 
     return _processedRealAlbumOrder && _attemptedDataLoad;
-    // return _processedRealAlbumOrder;
 }
 
 // return an array of Album objects in their real order

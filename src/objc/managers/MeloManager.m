@@ -96,11 +96,12 @@ static MeloManager *sharedMeloManager;
         @"collapsibleSectionsEnabled": @YES,
         @"showWiggleModeActionEnabled": @YES,
         @"preserveCollapsedStateEnabled": @YES,
-        @"affectAlbumPagesEnabled": @YES,
         @"wiggleModeHooksEnabled": @YES,
         @"themingHooksEnabled": @YES,
         @"pinningHooksEnabled": @YES,
-        @"layoutHooksEnabled": @YES
+        @"layoutHooksEnabled": @YES,
+        @"mainLayoutAffectsOtherAlbumPagesEnabled": @YES,
+        @"hideTextAffectsOtherAlbumPagesEnabled": @NO
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
@@ -118,6 +119,16 @@ static MeloManager *sharedMeloManager;
     }
 }
 
+// returns the spacing between album cells for other album pages
+- (CGFloat)otherPagesCollectionViewCellSpacing {
+
+    if ([self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
+        return [self collectionViewCellSpacing];
+    } else {
+        return 20;
+    }
+}
+
 // returns the size of each album in a collection view to change the number of displayed columns
 - (CGSize)collectionViewItemSize {
     NSInteger numColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? [[self prefsObjectForKey:@"customNumColumns"] integerValue] : 2;
@@ -126,7 +137,33 @@ static MeloManager *sharedMeloManager;
     float albumWidth = floor((screenWidth - 20 * 2 - [self collectionViewCellSpacing] * (numColumns - 1)) / numColumns);
     float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
 
-    return [self prefsBoolForKey:@"hideAlbumTextEnabled"] ? CGSizeMake(albumWidth, albumWidth) : CGSizeMake(albumWidth, albumHeight);
+    if ([self prefsBoolForKey:@"hideAlbumTextEnabled"]) {
+        return CGSizeMake(albumWidth, albumWidth);
+    } else {
+        float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+        return CGSizeMake(albumWidth, albumHeight);
+    }
+}
+
+// returns the size of each album in a collection view to change the number of displayed columns for other albums pages
+- (CGSize)otherPagesCollectionViewItemSize {
+    NSInteger numColumns;
+    NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
+
+    if ([self prefsBoolForKey:@"customNumColumnsEnabled"] && [self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
+        numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
+    } else {
+        numColumns = 2;
+    }
+
+    float albumWidth = floor((screenWidth - 20 * 2 - [self otherPagesCollectionViewCellSpacing] * (numColumns - 1)) / numColumns);
+
+    if ([self prefsBoolForKey:@"hideAlbumTextEnabled"] && [self prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
+        return CGSizeMake(albumWidth, albumWidth);
+    } else {
+        float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+        return CGSizeMake(albumWidth, albumHeight);
+    }
 }
 
 // check preferences for if the pinned albums should be cleared
@@ -136,13 +173,12 @@ static MeloManager *sharedMeloManager;
 
     NSString *clearPinsKey = @"MELO_CLEAR_PINS_KEY";
     NSString *savedID = [_defaults objectForKey:clearPinsKey];
-    [Logger logString:@"here"];
     NSString *prefsID = [self prefsObjectForKey:clearPinsKey];
 
     [[Logger sharedInstance] logStringWithFormat:@"savedClearPinsID: %@, preferencesClearPinsID: %@", savedID, prefsID];
 
     // check if the preference clear pins key has changed
-    // TODO: this is probably redudant
+    // TODO: this is probably redudant (like it could be compressed)
     BOOL shouldClearPins = ((prefsID && !savedID) || (prefsID && savedID && ![prefsID isEqualToString:savedID]));
     if (!shouldClearPins) {
         return;

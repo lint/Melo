@@ -25,6 +25,8 @@
 
 - (CGFloat)collectionViewCellSpacing;
 - (CGSize)collectionViewItemSize;
+- (CGFloat)otherPagesCollectionViewCellSpacing;
+- (CGSize)otherPagesCollectionViewItemSize;
 - (void)checkClearPins;
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender;
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;

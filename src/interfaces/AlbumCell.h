@@ -8,4 +8,5 @@
 // custom elements
 - (void)addShakeAnimation;
 - (void)removeShakeAnimation;
+- (void)setTextAndBadgeHidden:(BOOL)arg1;
 @end

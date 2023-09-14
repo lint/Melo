@@ -34,7 +34,19 @@
 @property(strong, nonatomic) MPModelPlaylist *playlist;
 @end
 
+@interface MPModelStoreBrowseContentItem : MPModelObject
+@property(assign, nonatomic) NSUInteger itemType;
+@property(assign, nonatomic) NSInteger detailedItemType;
+@property(strong, nonatomic) MPModelAlbum *album;
+@property(strong, nonatomic) MPModelPlaylist *playlist;
+@end
+
+@interface MusicModelGridItem : MPModelObject
+@property(strong, nonatomic) MPModelStoreBrowseContentItem *contentItem;
+@end
+
 @interface MPSectionedCollection : NSObject
+@property(strong, nonatomic) id firstItem;
 - (NSArray *)allItems;
 @end
 

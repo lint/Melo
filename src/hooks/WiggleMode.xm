@@ -66,9 +66,9 @@
 
     if ([dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
         WiggleModeManager *wiggleManager = [dataSource wiggleModeManager];
-        // if (wiggleManager) {
+        if (wiggleManager) {
             [wiggleManager inWiggleMode] ? [self addShakeAnimation] : [self removeShakeAnimation];
-        // }
+        }
     }
 }
 
@@ -375,26 +375,17 @@
     UIView *parentView = [[self parentViewController] view];
     //NSIndexPath *sourceIndexPath = [collectionView indexPathForItemAtPoint:arg1];
 
-    [Logger logString:@"here1"];
-
     NSIndexPath *sourceIndexPath = [collectionView indexPathForItemAtPoint:[collectionView convertPoint:arg1 fromView:parentView]];
 
-    [Logger logString:@"here2"];
     [Logger logStringWithFormat:@"sourceIndexPath: %@", sourceIndexPath];
 
     [self collectionView:collectionView canMoveItemAtIndexPath:sourceIndexPath];
 
-    [Logger logString:@"here if didn't crash"];
-
     if (sourceIndexPath && [self collectionView:collectionView canMoveItemAtIndexPath:sourceIndexPath]) {
-
-        [Logger logString:@"here3"];
 
         Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:sourceIndexPath];
         AlbumCell *cell = (AlbumCell *)[collectionView cellForItemAtIndexPath:sourceIndexPath];
         UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(cell, "artworkComponent"), "imageView");
-
-        [Logger logString:@"here4"];
 
         //[self setOriginalIndexPath:sourceIndexPath];
         wiggleManager.draggingIndexPath = sourceIndexPath;
@@ -406,29 +397,22 @@
         UIView *draggingWrapperView = [[UIView alloc] initWithFrame:CGRectMake(draggingViewFrame.origin.x, draggingViewFrame.origin.y, draggingViewFrame.size.width, draggingViewFrame.size.width)];
         draggingWrapperView.clipsToBounds = YES;
 
-        [Logger logString:@"here5"];
-
         UIView *draggingView = [cell snapshotViewAfterScreenUpdates:YES];
 
-        [Logger logString:@"here6"];
         //UIView *draggingView = [artworkView snapshotViewAfterScreenUpdates:YES];
         draggingView.backgroundColor = [UIColor clearColor];
 
         draggingView.frame = [draggingWrapperView convertRect:draggingViewFrame fromView:parentView];
         //draggingView.frame = draggingWrapperView.bounds;
 
-        [Logger logString:@"here7"];
-
         [draggingWrapperView addSubview:draggingView];
         [parentView addSubview:draggingWrapperView];
 
         wiggleManager.draggingView = draggingWrapperView;
         
-        [Logger logString:@"here8"];
         //[self setDraggingOffset:CGPointMake(draggingView.center.x - arg1.x, draggingView.center.y - arg1.y)]; // commented out in old code
         // [self setDraggingOffset:CGPointMake(draggingWrapperView.center.x - arg1.x, draggingWrapperView.center.y - arg1.y)];
         wiggleManager.draggingOffset = CGPointMake(draggingWrapperView.center.x - arg1.x, draggingWrapperView.center.y - arg1.y);
-        [Logger logString:@"here9"];
         // hiding the cell and making the text disappear with an animation
         artworkView.alpha = 0;
 
@@ -445,7 +429,6 @@
             textStackView.alpha = 0;
         [UIView commitAnimations];
 
-        [Logger logString:@"here10"];
 
         // what was i doing here? 
         // id detailTextComponent = MSHookIvar<id>(cell, "detailTextComponents");
@@ -467,14 +450,11 @@
 
         wiggleManager.endWiggleModeView.userInteractionEnabled = NO; // TODO: why do i do this all the way down here?
 
-        [Logger logString:@"here11"];
 
         [self triggerHapticFeedback];
 
         //[collectionView.collectionViewLayout invalidateLayout]; // do I need this?
     }
-
-    [Logger logString:@"method done"];
 }
 
 %new
@@ -589,8 +569,8 @@
 
     AlbumCell *cell = (AlbumCell *)[collectionView cellForItemAtIndexPath:draggingIndexPath];
     UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(cell, "artworkComponent"), "imageView");
-    CGPoint targetCenter = [[[self parentViewController] view] convertPoint:artworkView.center fromView:cell];
-    //CGPoint targetCenter = [[[self parentViewController] view] convertPoint:cell.center fromView:collectionView]; // old code
+    // CGPoint targetCenter = [[[self parentViewController] view] convertPoint:artworkView.center fromView:cell];
+    CGPoint targetCenter = [[[self parentViewController] view] convertPoint:cell.center fromView:collectionView]; // old code
 
     NSDictionary *context = @{
         @"cell": cell,

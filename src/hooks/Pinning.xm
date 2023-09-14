@@ -460,8 +460,6 @@
 - (id)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) cellForItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
 
-    // in old code, this sets the custom "identifier" property on the AlbumCell returned by %orig(injected)
-
     id orig;
 
     // check if recently added manager is ready to inject data
@@ -469,11 +467,13 @@
     if (![recentlyAddedManager isReadyForUse]) {
         orig = %orig;
     } else {
+        NSString *albumIdent = [recentlyAddedManager albumAtAdjustedIndexPath:arg2].identifier;
         NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
         [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
 
         // use the injected data
         orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+        [orig setIdentifier:albumIdent];
     }
 
     return orig;
@@ -911,14 +911,14 @@
 // allows the context menu to pop up with the correct album without crashing
 // fairly certain this is just used to find the initial location of the selected cell when called in use of the context menu, but whatever the reason, it's necessary
 - (UICollectionViewCell *)cellForItemAtIndexPath:(NSIndexPath *)arg1 {
-    [[Logger sharedInstance] logStringWithFormat:@"UICollectionView: %p cellForItemAtIndexPath: %@", self, arg1];
+    // [[Logger sharedInstance] logStringWithFormat:@"UICollectionView: %p cellForItemAtIndexPath: %@", self, arg1];
 
     MeloManager *meloManager = [MeloManager sharedInstance];
     NSIndexPath *overridingIndexPath = meloManager.indexPathForContextMenuOverride;
 
     // check if overriding index path exists
     if (overridingIndexPath) {
-        [[Logger sharedInstance] logStringWithFormat:@"\toverriding index path to: %@", overridingIndexPath];
+        [[Logger sharedInstance] logStringWithFormat:@"\toverriding [UICollectionView cellForItemAtIndexPath:%@] index path to: %@", arg1, overridingIndexPath];
         return %orig(overridingIndexPath);
     } else {
         return %orig;
@@ -937,7 +937,7 @@
 
 // not the best method to inject custom actions into, but the one i could find that works for the moment
 - (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
     MeloManager *meloManager = [MeloManager sharedInstance];
     LibraryRecentlyAddedViewController *currentLRAVC = [meloManager currentLRAVC];
