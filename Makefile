@@ -1,22 +1,24 @@
 export ARCHS = arm64e
 
-TARGET = iphone:latest:14.0
+#export TARGET = iphone:latest:14.0
+export TARGET = iphone:14.5:14.0
 
 INSTALL_TARGET_PROCESSES = Music
 #INSTALL_TARGET_PROCESSES = SpringBoard
 
 export THEOS_PACKAGE_SCHEME = rootless
 
-#export THEOS_DEVICE_IP = 192.168.86.21
+# export THEOS_DEVICE_IP = 192.168.86.21
 export THEOS_DEVICE_IP = 10.0.0.231
+# export THEOS_DEVICE_IP = 10.5.18.63
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Melo
 
-Melo_FILES = $(wildcard src/hooks/*.x src/hooks/*.xm src/objc/*/*.m)
+Melo_FILES = src/hooks/main.xmi $(wildcard src/objc/*/*.m)
 Melo_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-everything
-#Melo_FRAMEWORKS += AudioToolbox
+Melo_FRAMEWORKS += AudioToolbox
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
