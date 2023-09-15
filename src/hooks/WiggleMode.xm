@@ -707,8 +707,8 @@
 
     } else {
 
-        // CGFloat autoScrollInterval = 0.0025;
-        CGFloat autoScrollInterval = 0.5;
+        CGFloat autoScrollInterval = 0.0025;
+        // CGFloat autoScrollInterval = 0.5;
 
         // user is holding the album cell at the top of the screen, autoscroll up
         if (arg1.y <= 0.2 * screenHeight) {
