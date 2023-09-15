@@ -166,7 +166,9 @@
     NSMutableArray *albums = [NSMutableArray array];
 
     for (Album *album in _albums) {
-        [albums addObject:[album toDictionary]];
+        if (![album isFakeAlbum]) {
+            [albums addObject:[album toDictionary]];
+        }
     }
 
     data[@"albums"] = albums;

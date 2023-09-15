@@ -13,5 +13,6 @@
 - (NSDictionary *)toDictionary;
 - (instancetype)copy;
 - (BOOL)isEqual:(id)arg1;
-
+- (BOOL)isFakeAlbum;
++ (Album *)createFakeAlbum;
 @end

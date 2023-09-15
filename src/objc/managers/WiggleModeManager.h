@@ -9,7 +9,6 @@
 @property(strong, nonatomic) NSIndexPath *draggingIndexPath;
 @property(strong, nonatomic) NSString *draggingAlbumIdentifier;
 @property(strong, nonatomic) NSTimer *autoScrollTimer;
-@property(strong, nonatomic) NSTimer *emptyInsertTimer;
 @property(strong, nonatomic) UIView *endWiggleModeView;
 
 - (void)invalidateTimers;

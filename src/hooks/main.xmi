@@ -16,6 +16,8 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
 
     if ([meloManager prefsBoolForKey:@"enabled"]) {
+        [Logger logString:@"start initing hooks"];
+
         InitLayout();
         InitWiggleMode();
         InitPinning();

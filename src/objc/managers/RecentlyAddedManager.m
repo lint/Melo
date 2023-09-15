@@ -44,7 +44,6 @@
 
     Section *section = _sections[arg1.section];
     Album *album = [section albumAtIndex:arg1.item];
-
     return [album realIndexPath];
 }
 
@@ -212,6 +211,12 @@
 // return YES if an album at a given index path is able to be shifted left/right
 - (BOOL)canShiftAlbumAtAdjustedIndexPath:(NSIndexPath *)arg1 movingLeft:(BOOL)isMovingLeft {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager: %@ - canShiftAlbumAtAdjustedIndexPath:<%ld-%ld>", self, arg1.section, arg1.item];
+    
+    Album *album = [self albumAtAdjustedIndexPath:arg1];
+
+    if ([album isFakeAlbum]) {
+        return NO;
+    }
     
     // only allow the album to be shifted if it is not in the recently added section
     Section *recentSection = [self recentSection];
@@ -556,6 +561,13 @@
             section.collapsed = NO;
         }
     }
+
+    // remove any fake albums that might've been accidentally saved
+    // for (Section *section in _sections) {
+    //     [section removeAlbumWithIdentifier:@"MELO_ALBUM_WIGGLE_MODE_INSERTION"];
+    // }
+
+    // TODO: condense these two for loops into one?
         
     // }
 
@@ -573,6 +585,18 @@
     _attemptedDataLoad = YES;
 
     [[Logger sharedInstance] logString:@"done data load"];
+}
+
+// adds or removes a fake insertion album in every section for wiggle mode
+- (void)updateFakeInsertionAlbums:(BOOL)shouldAdd {
+
+    for (Section *section in _sections) {
+        if (shouldAdd) {
+            [section addAlbum:[Album createFakeAlbum]];
+        } else {
+            [section removeAlbumWithIdentifier:@"MELO_ALBUM_WIGGLE_MODE_INSERTION"];
+        }
+    }
 }
 
 @end

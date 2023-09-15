@@ -57,6 +57,9 @@
 
 
 %hook AlbumCell
+%property(strong, nonatomic) NSString *identifier;
+%property(strong, nonatomic) UIView *wiggleModeFakeAlbumView;
+%property(strong, nonatomic) UIImageView *wiggleModeFakeAlbumIconView;
 
 - (void)layoutSubviews {
     %orig;
@@ -65,10 +68,92 @@
     id dataSource = [[self _collectionView] dataSource];
 
     if ([dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
+        
         WiggleModeManager *wiggleManager = [dataSource wiggleModeManager];
-        if (wiggleManager) {
+        RecentlyAddedManager *recentlyAddedManager = [dataSource recentlyAddedManager];
+        Album *album = [recentlyAddedManager albumWithIdentifier:[self identifier]];
+        
+        if (wiggleManager && ![album isFakeAlbum]) {
             [wiggleManager inWiggleMode] ? [self addShakeAnimation] : [self removeShakeAnimation];
+        } else if ([album isFakeAlbum]) {
+            [self removeShakeAnimation];
         }
+
+        [self layoutWiggleModeFakeAlbumViews];   
+    }
+}
+
+// layout views for wiggle mode's fake insertion album
+%new
+- (void)layoutWiggleModeFakeAlbumViews {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    id dataSource = [[self _collectionView] dataSource];
+
+    WiggleModeManager *wiggleManager = [dataSource wiggleModeManager];
+    RecentlyAddedManager *recentlyAddedManager = [dataSource recentlyAddedManager];
+    Album *album = [recentlyAddedManager albumWithIdentifier:[self identifier]];
+    
+    UIView *wiggleModeFakeAlbumView = [self wiggleModeFakeAlbumView];
+    UIImageView *wiggleModeFakeAlbumIconView = [self wiggleModeFakeAlbumIconView];
+    UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
+    
+    if ([album isFakeAlbum] && wiggleModeFakeAlbumView) {
+        wiggleModeFakeAlbumView.frame = [self bounds];
+
+        CGFloat radius;            
+        if ([meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"]) {
+            radius = [[meloManager prefsObjectForKey:@"customAlbumCellCornerRadius"] floatValue] / 100 * [self frame].size.width;
+        } else {
+            radius = 4; // default radius
+        }
+
+        artworkView.hidden = YES;
+        wiggleModeFakeAlbumView.hidden = NO;
+        wiggleModeFakeAlbumView.clipsToBounds = YES;
+        [[wiggleModeFakeAlbumView layer] setCornerRadius:radius];
+
+        if (wiggleModeFakeAlbumIconView) {
+            wiggleModeFakeAlbumIconView.hidden = NO;
+            wiggleModeFakeAlbumIconView.frame = CGRectMake(0, 0, wiggleModeFakeAlbumView.frame.size.width / 2, wiggleModeFakeAlbumView.frame.size.height / 2);
+            wiggleModeFakeAlbumIconView.center = wiggleModeFakeAlbumView.center;
+        }
+
+    } else if (wiggleModeFakeAlbumView) {
+        wiggleModeFakeAlbumView.hidden = YES;
+        artworkView.hidden = NO;
+
+        if (wiggleModeFakeAlbumIconView) {
+            wiggleModeFakeAlbumIconView.hidden = YES;
+        }
+    }
+}
+
+// create views for wiggle mode's fake insertion album
+%new
+- (void)createWiggleModeFakeAlbumView {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    UIView *fakeAlbumView = [self wiggleModeFakeAlbumView];
+
+    if (!fakeAlbumView) {
+        fakeAlbumView = [[UIView alloc] initWithFrame:[self bounds]];
+        fakeAlbumView.backgroundColor = [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.2];
+
+        UIImageView *iconView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"arrow.left.circle.fill"]];
+        iconView.tintColor = [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.25];
+        iconView.contentMode = UIViewContentModeScaleAspectFit;
+
+        [self setWiggleModeFakeAlbumIconView:iconView];
+        [fakeAlbumView addSubview:iconView];
+
+        [self setWiggleModeFakeAlbumView:fakeAlbumView];
+        [self addSubview:fakeAlbumView];
+
+    } else if (![fakeAlbumView isDescendantOfView:self]) {
+
+        [fakeAlbumView removeFromSuperview];
+        [self addSubview:fakeAlbumView];
     }
 }
 
@@ -107,7 +192,9 @@
 %new
 - (BOOL)collectionView:(UICollectionView *)collectionView canMoveItemAtIndexPath:(NSIndexPath *)indexPath {
     [Logger logStringWithFormat:@"LRAVC: %p collectionView canMoveItemAtIndexPath:<%ld,%ld>", self, indexPath.section, indexPath.item];
-    return YES;
+    
+    Album *album = [[self recentlyAddedManager] albumAtAdjustedIndexPath:indexPath];
+    return ![album isFakeAlbum];
 }
 
 // implemented for wiggle mode TODO: update this line
@@ -129,6 +216,30 @@
         [recentlyAddedManager moveAlbumAtAdjustedIndexPath:sourceIndexPath toAdjustedIndexPath:destIndexPath];
         [self moveAlbumCellFromAdjustedIndexPath:sourceIndexPath toAdjustedIndexPath:destIndexPath dataUpdateBlock:nil]; 
     }
+}
+
+%new // technically this is used for interactive movement of cells in a uicollectionview, but since I do my own, this isn't called automatically
+- (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
+    atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath {
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    Album *proposedAlbumTarget = [recentlyAddedManager albumAtAdjustedIndexPath:proposedIndexPath];
+    NSInteger recentlyAddedSectionIndex = [recentlyAddedManager numberOfSections] - 1;
+
+    // TODO: actually do this? one of the fun things about wiggle mode is being able to whip an album thru recently added and watch them go everywhere
+    // do not allow moves within the recent section
+    // if (proposedIndexPath.section == recentlyAddedSectionIndex) {
+    //     return [NSIndexPath indexPathForItem:0 inSection:recentlyAddedSectionIndex];
+    // } 
+
+    // offset the proposed path by -1 if attempting to move ontop of fake album from within the same section (ensures the fake album doesn't move)
+    if ([proposedAlbumTarget isFakeAlbum]) {
+        if (currentIndexPath.section == proposedIndexPath.section) {
+            return [NSIndexPath indexPathForItem:proposedIndexPath.item - 1 inSection:proposedIndexPath.section];
+        }
+    }
+
+    return proposedIndexPath;
 }
 
 %new
@@ -195,17 +306,30 @@
         // getting indexes of collapsed sections to be uncollapsed
         NSMutableArray *indexesToUncollapse = [NSMutableArray array];
 
+        // get index paths of fake albums to insert
+        NSMutableArray *fakeAlbumIndexPaths = [NSMutableArray array];
+
         for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
             Section *section = [recentlyAddedManager sectionAtIndex:i];
+            
             if (section.isCollapsed) {
                 [indexesToUncollapse addObject:@(i)];
             }
+
+            NSIndexPath *fakeAlbumIndexPath = [NSIndexPath indexPathForItem:[section numberOfAlbums] inSection:i];
+            [fakeAlbumIndexPaths addObject:fakeAlbumIndexPath];
         }
 
         // uncollapse the sections (old code had this in a performBatchUpdates block, necessary?)
         for (NSNumber *index in indexesToUncollapse) {
             [self toggleSectionCollapsedAtIndex:[index integerValue]];
         }
+
+        // insert fake albums for moving an album into an empty section (this must take place after uncollapsing sections)
+        [recentlyAddedManager updateFakeInsertionAlbums:YES];
+
+        // insert fake albums to every section
+        [collectionView insertItemsAtIndexPaths:fakeAlbumIndexPaths];
 
         // starts shake animation on album cells and updates the collapse arrow view on section headers
         for (UIView *view in [collectionView _visibleViews]) {
@@ -260,6 +384,28 @@
             [collectionView removeGestureRecognizer:wiggleManager.longPressRecognizer];
             wiggleManager.longPressRecognizer = nil;
         }
+
+        // remove fake album index paths from the collection view
+        NSMutableArray *fakeAlbumIndexPaths = [NSMutableArray array];
+
+        for (NSInteger sectionIndex = 0; sectionIndex < [recentlyAddedManager numberOfSections]; sectionIndex++) {
+            Section *section = [recentlyAddedManager sectionAtIndex:sectionIndex];
+
+            for (NSInteger albumIndex = 0; albumIndex < [section numberOfAlbums]; albumIndex++) {
+                Album *album = [section albumAtIndex:albumIndex];
+                
+                if ([album isFakeAlbum]) {
+                    NSIndexPath *fakeAlbumIndexPath = [NSIndexPath indexPathForItem:albumIndex inSection:sectionIndex];
+                    [fakeAlbumIndexPaths addObject:fakeAlbumIndexPath];
+                }
+            }
+        }
+
+        // remove fake albums from recentlyAddedManager's data
+        [recentlyAddedManager updateFakeInsertionAlbums:NO];
+
+        // remove fake albums from every section in the collection view
+        [collectionView deleteItemsAtIndexPaths:fakeAlbumIndexPaths];
 
         // stops shake animation and causes collapsed item views to reappear
         for (UIView *view in [collectionView _visibleViews]) {
@@ -469,75 +615,20 @@
     NSIndexPath *draggingIndexPath = wiggleManager.draggingIndexPath;
     CGPoint draggingOffset = wiggleManager.draggingOffset;
 
-    // old code
-    //[self draggingView].center = [collectionView convertPoint:CGPointMake(arg1.x + draggingOffset.x, arg1.y + draggingOffset.y) toView:[[self parentViewController] view]];
+    if (!wiggleManager.draggingView) {
+        return;
+    }
 
     wiggleManager.draggingView.center = CGPointMake(arg1.x + draggingOffset.x, arg1.y + draggingOffset.y);
-
-    NSTimer *emptyInsertTimer = wiggleManager.emptyInsertTimer;
-    UIView *hitTestView = [collectionView hitTest:[collectionView convertPoint:arg1 fromView:[[self parentViewController] view]] withEvent:nil];
-    UIView *hitTestSuperview = [hitTestView superview];
-    TitleSectionHeaderView *headerView;
-
-    if ([hitTestView isKindOfClass:objc_getClass("MusicApplication.TitleSectionHeaderView")]) {
-        headerView = (TitleSectionHeaderView *)hitTestView;
-    } else if ([hitTestSuperview isKindOfClass:objc_getClass("MusicApplication.TitleSectionHeaderView")]) {
-        headerView = (TitleSectionHeaderView *)hitTestSuperview;
-    }
-
-    // TODO:
-    // so the hit test can get either the title section header view or get it as a superview?
-    // why do i do this? because I add my own subviews to the header?
-
-    // HBLogDebug(@"hitTestView: %@, SUPERVIEW: %@", hitTestView, [hitTestView superview]);
-
-    if (headerView) {
-    //if ([[hitTestView superview] isKindOfClass:objc_getClass("MusicApplication.TitleSectionHeaderView")]) {
-        //TitleSectionHeaderView *headerView = (TitleSectionHeaderView *)[hitTestView superview];
-        NSString *identifier = [headerView identifier];
-        // HBLogError(@"HIT TEST GOT TO HEADER VIEW: %@", headerView);
-
-        if (!emptyInsertTimer){
-
-            //BOOL sectionIsEmpty = [identifier isEqualToString:@"RecentSection"] ? [apManager recentSectionIsEmpty] : [apManager customSectionWithIdentifierIsEmpty:identifier];
-            // BOOL sectionIsEmpty = [apManager sectionIsEmptyWithIdentifier:identifier];
-            Section *section = [recentlyAddedManager sectionWithIdentifier:identifier];
-
-            if ([section isEmpty]) {
-                // TODO: possibly changes these dictionary keys?
-                NSDictionary *userInfo = @{@"sectionIdentifier" : identifier, @"headerView" : headerView};
-                emptyInsertTimer = [NSTimer scheduledTimerWithTimeInterval:0.75 target:self selector:@selector(handleEmptySectionInsert:) userInfo:userInfo repeats:NO];
-                wiggleManager.emptyInsertTimer = emptyInsertTimer;
-
-                [headerView highlightEmptyInsertionView:YES];
-            }
-
-        } else if (![identifier isEqualToString:emptyInsertTimer.userInfo[@"sectionIdentifier"]]) {
-            [emptyInsertTimer.userInfo[@"headerView"] highlightEmptyInsertionView:NO];
-            [emptyInsertTimer invalidate];
-            // [self setEmptyInsertTimer:nil];
-            wiggleManager.emptyInsertTimer = nil;
-        }
-
-    } else {
-        if (emptyInsertTimer) {
-
-            [emptyInsertTimer.userInfo[@"headerView"] highlightEmptyInsertionView:NO];
-
-            [emptyInsertTimer invalidate];
-            wiggleManager.emptyInsertTimer = nil;
-        }
-    }
 
     //NSIndexPath *newIndexPath = [collectionView indexPathForItemAtPoint:arg1];
     NSIndexPath *newIndexPath = [collectionView indexPathForItemAtPoint:[collectionView convertPoint:arg1 fromView:[[self parentViewController] view]]];
 
+    // TODO: don't keep these values nil? guess it doesn't really matter
+    newIndexPath = [self collectionView:nil targetIndexPathForMoveOfItemFromOriginalIndexPath:nil atCurrentIndexPath:draggingIndexPath toProposedIndexPath:newIndexPath];
+
     if (newIndexPath && ![newIndexPath isEqual:draggingIndexPath]) {
-        //[collectionView moveItemAtIndexPath:draggingIndexPath toIndexPath:newIndexPath];
-        //[self setDraggingIndexPath:newIndexPath];
         [self collectionView:collectionView moveItemAtIndexPath:draggingIndexPath toIndexPath:newIndexPath];
-        // [self setDraggingIndexPath:[[APManager sharedInstance] adjustedIndexPathForAlbumWithIdentifier:[self draggingAlbumIdentifier]]]; // old code
-        // TODO: why do i get the index path using the album identifier here? can i not just use the newIndexPath?
         wiggleManager.draggingIndexPath = newIndexPath;
     }
 
@@ -551,14 +642,6 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     WiggleModeManager *wiggleManager = [self wiggleModeManager];
 
-    NSTimer *emptyInsertTimer = wiggleManager.emptyInsertTimer;
-    if (emptyInsertTimer) {
-        // if ([emptyInsertTimer isValid]) {
-        if (emptyInsertTimer.userInfo[@"headerView"]) {
-            [emptyInsertTimer.userInfo[@"headerView"] highlightEmptyInsertionView:NO];
-        }
-    }
-
     [wiggleManager invalidateTimers];
 
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
@@ -566,6 +649,10 @@
     UIView *draggingView = wiggleManager.draggingView;
     NSIndexPath *draggingIndexPath = wiggleManager.draggingIndexPath;
     //NSIndexPath *originalIndexPath = [self originalIndexPath]; // old code
+
+    if (!draggingView) {
+        return;
+    }
 
     AlbumCell *cell = (AlbumCell *)[collectionView cellForItemAtIndexPath:draggingIndexPath];
     UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(cell, "artworkComponent"), "imageView");
@@ -592,35 +679,6 @@
     [UIView commitAnimations];
 
     [recentlyAddedManager saveData];
-}
-
-%new
-- (void)handleEmptySectionInsert:(NSTimer *)arg1 {
-    [Logger logStringWithFormat:@"LRAVC: %p - handleEmptySectionInsert:(%@)", self, arg1];
-
-    // animate the flash highlight on the section header
-    [arg1.userInfo[@"headerView"] animateEmptySectionInsertionFlash];
-
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    WiggleModeManager *wiggleManager = [self wiggleModeManager];
-
-    // top two were commented out in old code
-    //NSString *sectionIdentifier = arg1.userInfo[@"sectionIdentifier"];
-    //NSInteger sectionIndex = [sectionIdentifier isEqualToString:@"RecentSection"] ? [apManager numberOfVisibleCustomSections] : [apManager visibleIndexForCustomSectionWithIdentifier:sectionIdentifier];
-    // NSInteger sectionIndex = [apManager visibleIndexForSectionWithIdentifier:arg1.userInfo[@"sectionIdentifier"]];
-    NSInteger sectionIndex = [recentlyAddedManager sectionIndexForIdentifier:arg1.userInfo[@"sectionIdentifier"]];
-
-    NSIndexPath *draggingIndexPath = wiggleManager.draggingIndexPath;
-    NSIndexPath *newIndexPath = [NSIndexPath indexPathForItem:0 inSection:sectionIndex];
-
-    if (draggingIndexPath) {
-        [self collectionView:MSHookIvar<UICollectionView *>(self, "_collectionView") moveItemAtIndexPath:draggingIndexPath toIndexPath:newIndexPath];
-        // [self setDraggingIndexPath:newIndexPath];
-        wiggleManager.draggingIndexPath = newIndexPath;
-    }
-
-    // [self setEmptyInsertTimer:nil];
-    wiggleManager.emptyInsertTimer = nil;
 }
 
 %new

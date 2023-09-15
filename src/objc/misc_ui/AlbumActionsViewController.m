@@ -63,8 +63,15 @@
         }
 
         Section *section = [recentlyAddedManager sectionAtIndex:i];
-        NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
+        [Logger logStringWithFormat:@"%@", section];
+        NSString *sectionTitle = [section.title copy];
+        [Logger logStringWithFormat:@"sectionTitle: %@", sectionTitle];
+        // NSString *title = [NSString stringWithFormat:@"Move to '%@'", sectionTitle]; // this broke for some reason... it started filling it with garbage? even tho the string was fine? idk
+        NSString *title = [@"Move to: " stringByAppendingString:sectionTitle ?: @"<no title>"];
         NSString *ident = section.identifier;
+
+        [Logger logStringWithFormat:@"title string: %@", title];
+        [Logger logStringWithFormat:@"%@", section.title];
 
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self action:@selector(handleButtonPress:) forControlEvents:UIControlEventTouchUpInside];

@@ -22,11 +22,6 @@
         [_autoScrollTimer invalidate];
         _autoScrollTimer = nil;
     }
-
-    if (_emptyInsertTimer) {
-        [_emptyInsertTimer invalidate];
-        _emptyInsertTimer = nil;
-    }
 }
 
 @end

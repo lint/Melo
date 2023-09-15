@@ -32,7 +32,8 @@
 
 // return this album's real index path
 - (NSIndexPath *)realIndexPath {
-    return [NSIndexPath indexPathForItem:_realIndex inSection:0];
+    NSInteger item = [self isFakeAlbum] ? 0 : _realIndex;
+    return [NSIndexPath indexPathForItem:item inSection:0];
 }
 
 // convert this album into a dictionary
@@ -63,6 +64,19 @@
         [_artist isEqualToString:[arg1 artist]] &&
         [_title isEqualToString:[arg1 title]] &&
         _realIndex == [arg1 realIndex];
+}
+
+// checks if this album is a fake album injected for use in wiggle mode
+- (BOOL)isFakeAlbum {
+    return [@"MELO_ALBUM_WIGGLE_MODE_INSERTION" isEqualToString:_identifier];
+}
+
+// creates a new album object to be injected for use in wiggle mode
++ (Album *)createFakeAlbum {
+    NSDictionary *info = @{
+        @"identifier": @"MELO_ALBUM_WIGGLE_MODE_INSERTION"
+    };
+    return [[Album alloc] initWithDictionary:info];
 }
 
 @end

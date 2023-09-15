@@ -39,5 +39,5 @@
 - (void)saveData;
 - (void)loadData;
 
-
+- (void)updateFakeInsertionAlbums:(BOOL)shouldAdd;
 @end

@@ -33,7 +33,6 @@
 %property(strong, nonatomic) NSString *identifier;
 %property(strong, nonatomic) UITapGestureRecognizer *tapGesture;
 %property(strong, nonatomic) LibraryRecentlyAddedViewController *recentlyAddedViewController;
-%property(strong, nonatomic) UIView *emptyInsertionView;
 
 // returns the recently added manager associated with the library recently added view controller
 %new 
@@ -109,7 +108,6 @@
 
     if (recentlyAddedManager && [recentlyAddedManager isReadyForUse]) {
 
-        UIView *emptyInsertionView = [self emptyInsertionView];
         UIImageView *chevronIndicatorView = [self chevronIndicatorView];
         UIView *titleDrawingView = MSHookIvar<UIView *>(self, "titleTextDrawingView");
         UIView *subtitleDrawingView = MSHookIvar<UIView *>(self, "subtitleTextDrawingView");
@@ -140,27 +138,6 @@
                 chevronIndicatorView.transform = [self isCollapsed] ? CGAffineTransformMakeRotation(0) :  CGAffineTransformMakeRotation(M_PI_2);
             [UIView commitAnimations];
         }
-
-        if (emptyInsertionView) {
-            //CGRect dragDetectionFrame = CGRectMake(0, titleFrame.origin.y, screenWidth, titleFrame.size.height);
-            //emptyInsertionView.frame = dragDetectionFrame;
-            emptyInsertionView.frame = CGRectMake(0,0, screenWidth, [self frame].size.height);
-            // TODO: just make this equal to the title header view's bounds?
-        }
-    }
-}
-
-%new
-- (void)createEmptyInsertionView {
-    UIView *emptyInsertionView = [self emptyInsertionView];
-    if (!emptyInsertionView) {
-        emptyInsertionView = [[UIView alloc] initWithFrame:CGRectZero];
-        emptyInsertionView.userInteractionEnabled = NO;
-        [self setEmptyInsertionView:emptyInsertionView];
-        [self addSubview:emptyInsertionView];
-    } else if (![emptyInsertionView isDescendantOfView:self]) {
-        [emptyInsertionView removeFromSuperview];
-        [self addSubview:emptyInsertionView];
     }
 }
 
@@ -188,43 +165,6 @@
 
     // perform additional data and visual updates
     [lravc toggleSectionCollapsedAtIndex:sectionIndex];
-}
-
-// animate a simple flashing highlight of this view that occurs when trying to move an album to an empty section in wiggle mode
-%new
-- (void)animateEmptySectionInsertionFlash {
-   
-    // UIColor *origColor = [(UIView *)self backgroundColor];
-    UIColor *origColor = [UIColor clearColor];
-    UIColor *highlightColor = [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.25];
-    NSTimeInterval interval = 0.175;
-
-    UIView *view = [self emptyInsertionView];
-
-    NSDictionary *context = @{
-        @"view": view,
-        @"origColor": [ColorUtils colorToDict:origColor],
-        @"highlightColor": [ColorUtils colorToDict:highlightColor],
-        @"interval": [NSNumber numberWithDouble:interval]
-    };
-
-    [UIView beginAnimations:@"MELO_ANIMATION_EMPTY_INSERTION_FLASH_PART_1" context:(__bridge_retained void *)context];
-    [UIView setAnimationDuration:interval];
-    [UIView setAnimationDelegate:[[self recentlyAddedViewController] animationManager]];
-    [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
-        [view setBackgroundColor:highlightColor];
-    [UIView commitAnimations];
-}
-
-%new
-- (void)highlightEmptyInsertionView:(BOOL)shouldHighlight {
-
-    // TODO: don't default to clearColor? or even tbh remove the empty insertion view and just highlight the title section view itself 
-
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:0.2];
-        [self emptyInsertionView].backgroundColor = shouldHighlight ? [UIColor colorWithRed:0.5 green:0.5 blue:0.5 alpha:0.25] : [UIColor clearColor];
-    [UIView commitAnimations];
 }
 
 // enabled / disable or show / hide collapse items when toggling wiggle mode
@@ -255,6 +195,8 @@
 %property(strong, nonatomic) AnimationManager *animationManager;
 
 - (id)init {
+
+    [Logger logStringWithFormat:@"LRAVC: %p - init", self];
 
     RecentlyAddedManager *recentlyAddedManager = [RecentlyAddedManager new];
     WiggleModeManager *wiggleManager = [WiggleModeManager new];   
@@ -434,8 +376,6 @@
         [titleHeaderView createCollapseItems];
     }
 
-    [titleHeaderView createEmptyInsertionView];
-
     return orig;
 }
 
@@ -467,13 +407,17 @@
     if (![recentlyAddedManager isReadyForUse]) {
         orig = %orig;
     } else {
-        NSString *albumIdent = [recentlyAddedManager albumAtAdjustedIndexPath:arg2].identifier;
+        Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:arg2];
         NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
         [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
 
         // use the injected data
         orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
-        [orig setIdentifier:albumIdent];
+        [orig setIdentifier:album.identifier];
+        
+        if ([album isFakeAlbum]) {
+            [orig createWiggleModeFakeAlbumView];
+        }
     }
 
     return orig;
