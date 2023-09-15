@@ -133,6 +133,20 @@
         [orig setTextAndBadgeHidden:YES];
     }
 
+    if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
+
+        NSInteger fontSize = [[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue];
+        UIFont *font = [UIFont systemFontOfSize:fontSize];
+        
+        // TODO: give these proper types?
+        id textStackView = MSHookIvar<id>(orig, "textStackView");
+        id indexedComponents = MSHookIvar<id>(textStackView, "indexedComponents");
+        id artistComponent = [indexedComponents objectForKey:@"artist"];
+        id labelProperties = MSHookIvar<id>(artistComponent, "labelProperties");
+        
+        MSHookIvar<id>(labelProperties, "_preferredFont") = font;
+    }
+
     return orig;
 }
 
@@ -161,8 +175,18 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
     id orig = %orig;
 
-    if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
-        [orig setTextAndBadgeHidden:YES];
+    if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
+
+        NSInteger fontSize = [[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue];
+        UIFont *font = [UIFont systemFontOfSize:fontSize];
+        
+        // TODO: give these proper types?
+        id textStackView = MSHookIvar<id>(orig, "textStackView");
+        id indexedComponents = MSHookIvar<id>(textStackView, "indexedComponents");
+        id artistComponent = [indexedComponents objectForKey:@"artist"];
+        id labelProperties = MSHookIvar<id>(artistComponent, "labelProperties");
+        
+        MSHookIvar<id>(labelProperties, "_preferredFont") = font;
     }
 
     return orig;
@@ -195,6 +219,21 @@
 
     if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"]) {
         [orig setTextAndBadgeHidden:YES];
+    } else {
+        
+        if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"]) {
+
+            NSInteger fontSize = [[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue];
+            UIFont *font = [UIFont systemFontOfSize:fontSize];
+            
+            // TODO: give these proper types?
+            id textStackView = MSHookIvar<id>(orig, "textStackView");
+            id indexedComponents = MSHookIvar<id>(textStackView, "indexedComponents");
+            id artistComponent = [indexedComponents objectForKey:@"artist"];
+            id labelProperties = MSHookIvar<id>(artistComponent, "labelProperties");
+            
+            MSHookIvar<id>(labelProperties, "_preferredFont") = font;
+        }
     }
 
     return orig;
@@ -286,12 +325,30 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
     id orig = %orig;
 
-    if ([self shouldApplyCustomLayout] && 
-        [meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && 
-        [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"] && 
-        [orig isKindOfClass:objc_getClass("AlbumCell")]) {
+    if ([self shouldApplyCustomLayout]) {
+
+        if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && 
+            [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"] && 
+            [orig isKindOfClass:objc_getClass("AlbumCell")]) {
         
-        [orig setTextAndBadgeHidden:YES];
+            [orig setTextAndBadgeHidden:YES];
+        }
+
+        if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] &&
+            [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] &&
+            [orig isKindOfClass:objc_getClass("AlbumCell")]) {
+
+            NSInteger fontSize = [[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue];
+            UIFont *font = [UIFont systemFontOfSize:fontSize];
+            
+            // TODO: give these proper types?
+            id textStackView = MSHookIvar<id>(orig, "textStackView");
+            id indexedComponents = MSHookIvar<id>(textStackView, "indexedComponents");
+            id artistComponent = [indexedComponents objectForKey:@"artist"];
+            id labelProperties = MSHookIvar<id>(artistComponent, "labelProperties");
+            
+            MSHookIvar<id>(labelProperties, "_preferredFont") = font;
+        }
     }
 
     return orig;

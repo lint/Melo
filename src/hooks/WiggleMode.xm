@@ -683,16 +683,11 @@
 
 %new
 - (void)checkAutoScrollWithPoint:(CGPoint)arg1 {
-
     [Logger logStringWithFormat:@"LRAVC: %p - checkAutoScrollWithPoint:()", self];
 
-    //CGPoint convertedPoint = [[[self parentViewController] view] convertPoint:arg1 fromView:MSHookIvar<UICollectionView *>(self, "_collectionView")];
-    //CGPoint convertedPoint = arg1;
-
     WiggleModeManager *wiggleManager = [self wiggleModeManager];
-
-    CGFloat screenHeight = [[UIScreen mainScreen] bounds].size.height;
     NSTimer *autoScrollTimer = [wiggleManager autoScrollTimer];
+    CGFloat screenHeight = [[UIScreen mainScreen] bounds].size.height;
 
     // TODO: fix this method
 
@@ -708,7 +703,6 @@
     } else {
 
         CGFloat autoScrollInterval = 0.0025;
-        // CGFloat autoScrollInterval = 0.5;
 
         // user is holding the album cell at the top of the screen, autoscroll up
         if (arg1.y <= 0.2 * screenHeight) {
@@ -723,10 +717,11 @@
         // user is holding the album cell at the bottom of the screen, autoscroll down
         } else if (arg1.y >= 0.8 * screenHeight) {
 
-            NSDictionary *userInfo = @{@"direction" : @"MELO_AUTOSCROLL_DIRECTION_DOWN"};
             // autoScrollTimer = [NSTimer scheduledTimerWithTimeInterval:.0025 repeats:YES block:^(NSTimer *timer) {
             //     [self autoScrollAction:NO];
             // }];
+
+            NSDictionary *userInfo = @{@"direction" : @"MELO_AUTOSCROLL_DIRECTION_DOWN"};
             autoScrollTimer = [NSTimer scheduledTimerWithTimeInterval:autoScrollInterval target:self selector:@selector(handleAutoScrollTimerFired:) userInfo:userInfo repeats:YES];
         }
 
@@ -736,7 +731,6 @@
 
 %new
 - (void)handleAutoScrollTimerFired:(NSTimer *)timer {
-
     [Logger logStringWithFormat:@"LRAVC: %p - handleAutoScrollTimerFired:(%@)", self, timer];
 
     NSDictionary *userInfo = (NSDictionary *)timer.userInfo;
@@ -750,7 +744,6 @@
 
 %new
 - (void)autoScrollAction:(BOOL)goingUp {
-
     [Logger logStringWithFormat:@"LRAVC: %p - autoScrollAction: goingUp(%i)", self, goingUp];
 
     //UIScrollView *scrollView = MSHookIvar<UIScrollView *>([self parentViewController], "$__lazy_storage_$_scrollView");
@@ -760,7 +753,6 @@
     CGPoint currentContentOffset = [scrollView contentOffset];
 
     CGFloat newContentOffsetY = goingUp ? MAX(currentContentOffset.y - 1, minOffset.y) : MIN(currentContentOffset.y + 1, maxOffset.y);
-
     scrollView.contentOffset = CGPointMake(0, newContentOffsetY);
 }
 
@@ -771,7 +763,6 @@
     //UIImpactFeedbackGenerator *feedbackGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
     //[feedbackGenerator impactOccurred];
 
-    // this is what oyu want
     AudioServicesPlaySystemSound(1520);
 }
 

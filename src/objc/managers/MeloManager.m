@@ -101,7 +101,9 @@ static MeloManager *sharedMeloManager;
         @"pinningHooksEnabled": @YES,
         @"layoutHooksEnabled": @YES,
         @"mainLayoutAffectsOtherAlbumPagesEnabled": @YES,
-        @"hideTextAffectsOtherAlbumPagesEnabled": @NO
+        @"hideTextAffectsOtherAlbumPagesEnabled": @NO,
+        @"customAlbumCellFontSizeEnabled": @NO,
+        @"customAlbumCellFontSize": @12
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];

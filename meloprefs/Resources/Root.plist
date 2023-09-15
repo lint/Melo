@@ -208,6 +208,42 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customAlbumCellFontSizeEnabled</string>
+			<key>label</key>
+			<string>Custom Album Cell Font Size</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>12</integer>
+			<key>min</key>
+			<integer>1</integer>
+			<key>max</key>
+			<integer>32</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customAlbumCellFontSize</string>
+			<key>label</key>
+			<string>Font Size</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
