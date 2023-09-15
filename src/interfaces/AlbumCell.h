@@ -12,6 +12,7 @@
 - (void)addShakeAnimation;
 - (void)removeShakeAnimation;
 - (void)setTextAndBadgeHidden:(BOOL)arg1;
+- (void)setTextToPrefsFontSize;
 - (void)createWiggleModeFakeAlbumView;
 - (void)layoutWiggleModeFakeAlbumViews;
 @end

@@ -3,15 +3,16 @@
 #import "../objc/objc_classes.h"
 #import "../interfaces/interfaces.h"
 
+// hooks focused on customizing the theme (colors) of the music app
 %group ThemingGroup 
 
+// hook all UIViews to find matching ones (trying to change the tint color at the source did not work out)
 %hook UIView
 
 // set the tint color of all uiviews 
 - (void)setTintColor:(id)arg1 {
     
     MeloManager *meloManager = [MeloManager sharedInstance];
-    
     if (arg1 && [meloManager prefsBoolForKey:@"customTintColorEnabled"]) {
 
         // get names of the pink color and current tint color
@@ -37,6 +38,7 @@
 
 %end
 
+// ThemingGroup end
 %end
 
 // theming hooks constructor
