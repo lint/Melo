@@ -34,6 +34,17 @@
 		NSArray *customSectionsInfo = settings[@"customSectionsInfo"];
 		NSDictionary *customRecentlyAddedInfo = settings[@"customRecentlyAddedInfo"];
 
+		NSInteger customSectionCellInsertOffset = 2; // just set to 2 since i know it is currently 2 from the number of cells in the plist
+
+		for (PSSpecifier *specifier in loadedSpecifiers) {
+			if ([@"customSectionListStartCell" isEqualToString:specifier.properties[@"key"]]) {
+				specifier.properties[@"enabled"] = @NO;
+				customSectionCellInsertOffset = [loadedSpecifiers indexOfObject:specifier];
+				[loadedSpecifiers removeObjectAtIndex:customSectionCellInsertOffset];
+				break;
+			}
+		}
+
 		// check if custom section info is present
 		if (!customSectionsInfo) {
 			_specifiers = loadedSpecifiers;
@@ -54,7 +65,7 @@
 			properties[@"customSectionType"] = @"MELO_USER_CUSTOM_SECTION";
 
 			// [self insertSpecifier:customCellSpecifier atEndOfGroup:0]; // caused crash when reload specifiers was called 
-			[loadedSpecifiers insertObject:customCellSpecifier atIndex:1 + i];
+			[loadedSpecifiers insertObject:customCellSpecifier atIndex:customSectionCellInsertOffset + i];
 		}
 
 		// iterate over every specifier
