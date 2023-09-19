@@ -53,3 +53,27 @@
 @interface MPModelResponse : NSObject
 @property(strong, nonatomic) MPSectionedCollection *results;
 @end
+
+@interface MPUFontDescriptor : NSObject
+@property(strong, nonatomic) UIFont *defaultFont;
+@property(strong, nonatomic) UIFont *preferredFont;
+@property(assign, nonatomic) CGFloat preferredFontLineHeight;
+@property(assign, nonatomic) CGFloat preferredFontAscender;
++ (id)fontDescriptorWithSystemFontSize:(CGFloat)arg1;
++ (id)fontDescriptorWithTextStyle:(NSInteger)arg1;
+
+// custom elements
+@property(assign, nonatomic) BOOL shouldOverrideLeading;
+@property(assign, nonatomic) CGFloat overrideLeadingValue;
+@property(assign, nonatomic) BOOL test;
+@end
+
+@interface MPUMutableFontDescriptor : MPUFontDescriptor
+- (void)setWeight:(NSInteger)arg1;
+- (void)setTextStyle:(NSInteger)arg1;
+- (void)setSystemFontSize:(CGFloat)arg1;
+- (void)setDefaultPointSizeAdjustment:(CGFloat)arg1;
+- (void)setUsesItalic:(BOOL)arg1;
+- (void)setLeadingAdjustment:(NSInteger)arg1;
+- (void)setWantsMonospaceNumbers:(BOOL)arg1;
+@end

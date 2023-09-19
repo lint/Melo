@@ -2,6 +2,7 @@
 #import "MeloManager.h"
 #import "RecentlyAddedManager.h"
 #import "../utilities/utilities.h"
+#import "../../interfaces/interfaces.h"
 
 static MeloManager *sharedMeloManager;
 
@@ -44,13 +45,17 @@ static MeloManager *sharedMeloManager;
         [Logger logString:@"MeloManager - init"];
 
         [self loadPrefs];
+
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
+        [Logger logStringWithFormat:@"defaults: %@", _defaults];
+
         _recentlyAddedManagers = [NSMutableArray array];
         self.shouldAddCustomContextActions = NO;
 
-        [Logger logStringWithFormat:@"defaults: %@", _defaults];
-
+        _albumCellTextSpacing = 5;
+        
         [self checkClearPins];
+        // [self updateCollectionViewLayoutValues]; // can't call here since [UIScreen mainScreen].bounds crashes the app
     }
 
     return self;
@@ -101,7 +106,7 @@ static MeloManager *sharedMeloManager;
         @"pinningHooksEnabled": @YES,
         @"layoutHooksEnabled": @YES,
         @"mainLayoutAffectsOtherAlbumPagesEnabled": @YES,
-        @"hideTextAffectsOtherAlbumPagesEnabled": @NO,
+        @"textLayoutAffectsOtherAlbumPagesEnabled": @NO,
         @"customAlbumCellFontSizeEnabled": @NO,
         @"customAlbumCellFontSize": @12
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
@@ -110,61 +115,65 @@ static MeloManager *sharedMeloManager;
     // [_defaultPrefs setObject:[self colorToDict:[UIColor systemPinkColor]] forKey:@"customTintColor"];
 }
 
-// returns the spacing between album cells 
-- (CGFloat)collectionViewCellSpacing {
-    NSInteger numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
+// updates the values for all properties related to collection view sizing and spacing
+- (void)updateCollectionViewLayoutValues {
+    
+    NSInteger customNumColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
+    NSInteger numLibraryColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? customNumColumns : 2;
+    NSInteger numOtherColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] && [self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] ? customNumColumns : 2;
+    NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width; // can't be done in %ctor
+    UIFont *customTextFont = [UIFont systemFontOfSize:[[self prefsObjectForKey:@"customAlbumCellFontSize"] integerValue]];
 
+    // the spacing between album cells
     if ([self prefsBoolForKey:@"customAlbumCellSpacingEnabled"]) {
-        return [[self prefsObjectForKey:@"customAlbumCellSpacing"] floatValue];
+        _collectionViewCellSpacing = [[self prefsObjectForKey:@"customAlbumCellSpacing"] floatValue];
     } else {
-        return [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - numColumns) / 10 * 2.5 + 5 : 20;
+        _collectionViewCellSpacing = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - customNumColumns) / 10 * 2.5 + 5 : 20;
     }
-}
-
-// returns the spacing between album cells for other album pages
-- (CGFloat)otherPagesCollectionViewCellSpacing {
-
+    
+    // spacing between album cells for other album pages
     if ([self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
-        return [self collectionViewCellSpacing];
+        _otherPagesCollectionViewCellSpacing = _collectionViewCellSpacing;
     } else {
-        return 20;
+        _otherPagesCollectionViewCellSpacing = 20;
     }
-}
 
-// returns the size of each album in a collection view to change the number of displayed columns
-- (CGSize)collectionViewItemSize {
-    NSInteger numColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? [[self prefsObjectForKey:@"customNumColumns"] integerValue] : 2;
-    NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
+    //size of each album in a collection view to change the number of displayed columns
 
-    float albumWidth = floor((screenWidth - 20 * 2 - [self collectionViewCellSpacing] * (numColumns - 1)) / numColumns);
-    float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+    float albumWidth = floor((screenWidth - 20 * 2 - _collectionViewCellSpacing * (numLibraryColumns - 1)) / numLibraryColumns);
 
     if ([self prefsBoolForKey:@"hideAlbumTextEnabled"]) {
-        return CGSizeMake(albumWidth, albumWidth);
+        _collectionViewItemSize = CGSizeMake(albumWidth, albumWidth);
     } else {
-        float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
-        return CGSizeMake(albumWidth, albumHeight);
-    }
-}
+        float albumHeight;
+        
+        if ([self prefsBoolForKey:@"customAlbumCellFontSizeEnabled"]) {
+            CGFloat textAndSpacingHeight = _albumCellTextSpacing * 3 + [customTextFont lineHeight] * 2;
+            albumHeight = albumWidth + textAndSpacingHeight;
+        } else {
+            albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+        }
 
-// returns the size of each album in a collection view to change the number of displayed columns for other albums pages
-- (CGSize)otherPagesCollectionViewItemSize {
-    NSInteger numColumns;
-    NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width;
-
-    if ([self prefsBoolForKey:@"customNumColumnsEnabled"] && [self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
-        numColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
-    } else {
-        numColumns = 2;
+        _collectionViewItemSize = CGSizeMake(albumWidth, albumHeight);
     }
 
-    float albumWidth = floor((screenWidth - 20 * 2 - [self otherPagesCollectionViewCellSpacing] * (numColumns - 1)) / numColumns);
+    // size of each album in a collection view to change the number of displayed columns for other albums pages
 
-    if ([self prefsBoolForKey:@"hideAlbumTextEnabled"] && [self prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
-        return CGSizeMake(albumWidth, albumWidth);
+    albumWidth = floor((screenWidth - 20 * 2 - _otherPagesCollectionViewCellSpacing * (numOtherColumns - 1)) / numOtherColumns);
+
+    if ([self prefsBoolForKey:@"hideAlbumTextEnabled"] && [self prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
+        _otherPagesCollectionViewItemSize = CGSizeMake(albumWidth, albumWidth);
     } else {
-        float albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
-        return CGSizeMake(albumWidth, albumHeight);
+        float albumHeight;
+
+        if ([self prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [self prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
+            CGFloat textAndSpacingHeight = _albumCellTextSpacing * 3 + [customTextFont lineHeight] * 2;
+            albumHeight = albumWidth + textAndSpacingHeight;
+        } else {
+            albumHeight = (albumWidth * 1.5 - albumWidth) > 40 ? floor(albumWidth * 1.5) : albumWidth + 40;
+        }
+
+        _otherPagesCollectionViewItemSize = CGSizeMake(albumWidth, albumHeight);
     }
 }
 

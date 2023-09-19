@@ -23,7 +23,7 @@
         if (name && [pinkName isEqualToString:name]) {
             
             // set the custom tint color
-            UIColor *color = [ColorUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
+            UIColor *color = [MeloUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
 
             if (color) {
                 %orig(color);

@@ -81,7 +81,7 @@
     } else if ([@"MELO_ANIMATION_EMPTY_INSERTION_FLASH_PART_1" isEqualToString:animationID]) {
 
         UIView *view = ctx[@"view"];
-        UIColor *origColor = [ColorUtils dictToColor:ctx[@"origColor"]];
+        UIColor *origColor = [MeloUtils dictToColor:ctx[@"origColor"]];
         NSNumber *interval = ctx[@"interval"];
 
         if (view && origColor) {
@@ -99,7 +99,7 @@
     } else if ([@"MELO_ANIMATION_EMPTY_INSERTION_FLASH_PART_2" isEqualToString:animationID]) {
 
         UIView *view = ctx[@"view"];
-        UIColor *highlightColor = [ColorUtils dictToColor:ctx[@"highlightColor"]];
+        UIColor *highlightColor = [MeloUtils dictToColor:ctx[@"highlightColor"]];
         NSNumber *interval = ctx[@"interval"];
 
         if (view && highlightColor) {
@@ -117,7 +117,7 @@
     } else if ([@"MELO_ANIMATION_EMPTY_INSERTION_FLASH_PART_3" isEqualToString:animationID]) {
 
         UIView *view = ctx[@"view"];
-        UIColor *origColor = [ColorUtils dictToColor:ctx[@"origColor"]];
+        UIColor *origColor = [MeloUtils dictToColor:ctx[@"origColor"]];
         NSNumber *interval = ctx[@"interval"];
 
         if (view && origColor) {

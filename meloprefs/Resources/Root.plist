@@ -226,7 +226,7 @@
 			<key>min</key>
 			<integer>1</integer>
 			<key>max</key>
-			<integer>32</integer>
+			<integer>24</integer>
 			<key>showValue</key>
 			<true/>
 			<key>integersOnly</key>
@@ -264,9 +264,9 @@
 			<key>PostNotification</key>
 			<string>com.lint.melo.prefs/prefschanged</string>
 			<key>key</key>
-			<string>hideTextAffectsOtherAlbumPagesEnabled</string>
+			<string>textLayoutAffectsOtherAlbumPagesEnabled</string>
 			<key>label</key>
-			<string>Hide Text Affects Other Pages</string>	
+			<string>Text Layout Affects Other Pages</string>	
 		</dict>
 		<dict>
 			<key>cell</key>

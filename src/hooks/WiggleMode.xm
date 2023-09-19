@@ -470,7 +470,7 @@
         endWiggleButton.frame = CGRectMake(screenSize.width / 8, 10, screenSize.width * .75, 30);
         [endWiggleButton setTitle:@"End Wiggle Mode" forState:UIControlStateNormal];
         [endWiggleButton setTitleColor:[UIColor labelColor] forState:UIControlStateNormal];
-        endWiggleButton.backgroundColor = [ColorUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
+        endWiggleButton.backgroundColor = [MeloUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
         endWiggleButton.layer.cornerRadius = 8;
         //endWiggleButton.clipsToBounds = YES;
 

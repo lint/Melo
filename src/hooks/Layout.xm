@@ -9,9 +9,11 @@
 
 // customize the appearance of album cells in various collection views
 %hook AlbumCell
+%property(strong, nonatomic) AlbumCellTextView *customTextView;
 
 // lays out subviews
 - (void)layoutSubviews {
+
     %orig;
 
     MeloManager *meloManager = [MeloManager sharedInstance];
@@ -20,7 +22,8 @@
     // check various settings and data sources
     BOOL hideAlbumTextEnabled = [meloManager prefsBoolForKey:@"hideAlbumTextEnabled"];
     BOOL customCornerRadiusEnabled = [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
-    BOOL applyHideTextToOtherPagesEnabled = [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"];
+    BOOL changeFontSizeEnabled = [meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"];
+    BOOL applyTextLayoutToOtherPagesEnabled = [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"];
     BOOL applyMainLayoutToOtherPagesEnabled = [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"];
     BOOL dataSourceIsLRAVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")];
     BOOL dataSourceIsOtherVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
@@ -39,9 +42,20 @@
     }
 
     // hide text if applicable
-    if (hideAlbumTextEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyHideTextToOtherPagesEnabled))) {
+    if (hideAlbumTextEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
         [self setTextAndBadgeHidden:YES];
-    }
+
+    // change font size if applicable
+    } else if (changeFontSizeEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
+        [self setTextAndBadgeHidden:YES];
+        
+        AlbumCellTextView *customTextView = [self customTextView];
+        UIView *textStackView = MSHookIvar<UIView *>(self, "textStackView");
+
+        if (customTextView && textStackView) {
+            customTextView.frame = textStackView.frame;
+        }
+    }    
 }
 
 // attempts to either show / hide the album text and explicit badge
@@ -59,28 +73,41 @@
     }
 }
 
-// sets the text size of the artist and title labels 
+// creates a new subview which redraws the album text 
 %new
-- (void)setTextToPrefsFontSize {
-    
-    NSInteger fontSize = [[[MeloManager sharedInstance] prefsObjectForKey:@"customAlbumCellFontSize"] integerValue];
-    UIFont *font = [UIFont systemFontOfSize:fontSize];
-    
+- (void)createCustomTextView {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    AlbumCellTextView *customTextView = [self customTextView];
     UIView *textStackView = MSHookIvar<UIView *>(self, "textStackView");
-    NSDictionary *indexedComponents = MSHookIvar<NSDictionary *>(textStackView, "indexedComponents");
-    
-    // only need to set one of the components for both to change, as they likely share the labelProperties object
-    id artistComponent = indexedComponents[@"artist"];
-    id labelProperties = MSHookIvar<id>(artistComponent, "labelProperties");
-    
-    MSHookIvar<UIFont *>(labelProperties, "_preferredFont") = font;
+
+    // ensure this album cell has a custom text view as a subview
+    if (!customTextView) {
+        customTextView = [AlbumCellTextView new];
+        [self addSubview:customTextView];
+        [self setCustomTextView:customTextView];
+    } else if (![customTextView isDescendantOfView:self]) {
+        [customTextView removeFromSuperview];
+        [self addSubview:customTextView];
+    }
+
+    // set up custom text view values
+    [customTextView setTitleText:[self title]];
+    [customTextView setArtistText:[self artistName]];
+    [customTextView setShouldShowExplicitBadge:[self accessibilityIsExplicit]];
+    [customTextView setSpacing:[meloManager albumCellTextSpacing]];
+    [customTextView setLabelFontSize:[[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue]];
 }
 
 %end
 
-
 // view controller found by going to the page Full Library > Albums
 %hook AlbumsViewController
+
+// called after the view has been loaded into memory
+- (void)viewDidLoad {
+    %orig;
+}
 
 // return the album cell for a given index path
 - (UICollectionViewCell *)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
@@ -89,12 +116,12 @@
     AlbumCell *orig = (AlbumCell *)%orig;
 
     // hide album text and explicit badge if applicable
-    if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
+    if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
         [orig setTextAndBadgeHidden:YES];
     
     // change the album text font size if applicable
-    } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
-        [orig setTextToPrefsFontSize];
+    } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
+        [orig createCustomTextView];
     }
 
     return orig;
@@ -131,12 +158,12 @@
     AlbumCell *orig = (AlbumCell *)%orig;
 
     // hide album text and explicit badge if applicable
-    if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
+    if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
         [orig setTextAndBadgeHidden:YES];
     
     // change the album text font size if applicable
-    } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"]) {
-        [orig setTextToPrefsFontSize];
+    } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
+        [orig createCustomTextView];
     }
 
     return orig;
@@ -178,7 +205,7 @@
     
     // change the album text font size if applicable
     } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"]) {
-        [orig setTextToPrefsFontSize];
+        [orig createCustomTextView];
     }
 
     return orig;
@@ -225,21 +252,19 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
     id orig = %orig;
 
-    if ([self shouldApplyCustomLayout]) {
-        
+    if ([self shouldApplyCustomLayout] && [orig isKindOfClass:objc_getClass("MusicApplication.AlbumCell")]) {
+
         // hide album text and explicit badge if applicable
         if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && 
-            [meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"] && 
-            [orig isKindOfClass:objc_getClass("AlbumCell")]) {
-        
+            [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
+            
             [orig setTextAndBadgeHidden:YES];
         
         // change the album text font size if applicable
         } else if ([meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"] &&
-            [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] &&
-            [orig isKindOfClass:objc_getClass("AlbumCell")]) {
+            [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
 
-            [orig setTextToPrefsFontSize];
+            [orig createCustomTextView];
         }
     }
 
@@ -281,7 +306,7 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
 
     // if other pages are not being affected by either setting, custom layout should never be applied
-    if (![meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] && ![meloManager prefsBoolForKey:@"hideTextAffectsOtherAlbumPagesEnabled"]) {
+    if (![meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] && ![meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
         [self setShouldApplyCustomLayout:NO];
         return;
     }
@@ -331,6 +356,31 @@
 
 %end
 
+
+// the music app's UIApplicationDelegate
+%hook ApplicationDelegate
+
+// [UIScreen mainScreen].bounds cannot be called in the %ctor, so MeloManager's setup is finished here
+- (BOOL)application:(UIApplication *)arg1 didFinishLaunchingWithOptions:(NSDictionary *)arg2 {
+    
+    [[MeloManager sharedInstance] updateCollectionViewLayoutValues];
+
+    return %orig;
+}
+
+%end
+
+// helper debug method to make things easier in flexing
+// %hook TextStackView
+
+// %new
+// - (id)labelProperties_test:(NSInteger)arg1 {
+//     NSArray *orderedComponents = MSHookIvar<NSArray *>(self, "orderedComponents");
+//     return MSHookIvar<id>(orderedComponents[arg1], "labelProperties");
+// }
+
+// %end
+
 // LayoutGroup end
 %end
 
@@ -345,7 +395,8 @@ extern "C" void InitLayout() {
             AlbumsViewController = objc_getClass("MusicApplication.AlbumsViewController"),
             ArtistViewController = objc_getClass("MusicApplication.ArtistViewController"),
             LibraryRecentlyAddedViewController = objc_getClass("MusicApplication.LibraryRecentlyAddedViewController"),
-            JSGridViewController = objc_getClass("MusicApplication.JSGridViewController")
+            JSGridViewController = objc_getClass("MusicApplication.JSGridViewController"),
+            ApplicationDelegate = objc_getClass("MusicApplication.ApplicationDelegate")
         );
     }
 }

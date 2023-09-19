@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 
 // forward declaration
-@class RecentlyAddedManager, WiggleModeManager, AnimationManager;
+@class RecentlyAddedManager, WiggleModeManager, AnimationManager, AlbumActionsViewController;
 
 @interface LibraryRecentlyAddedViewController : UIViewController
 
@@ -27,7 +27,6 @@
 - (void)startDragAtPoint:(CGPoint)arg1; 
 - (void)updateDragAtPoint:(CGPoint)arg1;
 - (void)endDragAtPoint:(CGPoint)arg1;
-// - (void)handleEmptySectionInsert:(NSTimer *)arg1;
 - (void)checkAutoScrollWithPoint:(CGPoint)arg1;
 - (void)handleAutoScrollTimerFired:(NSTimer *)timer;
 - (void)autoScrollAction:(BOOL)goingUp;

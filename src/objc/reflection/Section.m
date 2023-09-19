@@ -24,7 +24,7 @@
 
     self = [super init];
 
-    [[Logger sharedInstance] logStringWithFormat:@"Section: %p - initWithDictionary: %@", self, arg1];
+    // [[Logger sharedInstance] logStringWithFormat:@"Section: %p - initWithDictionary: %@", self, arg1];
 
     if (self) {
         _identifier = arg1[@"identifier"];
@@ -37,7 +37,7 @@
 
         for (NSDictionary *albumDict in arg1[@"albums"]) {
             Album *album = [[Album alloc] initWithDictionary:albumDict];
-            [[Logger sharedInstance] logStringWithFormat:@"adding album%@", arg1];
+            // [[Logger sharedInstance] logStringWithFormat:@"adding album%@", arg1];
             [_albums addObject:album];
         }
     }

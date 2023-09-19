@@ -14,6 +14,11 @@
 @property(strong, atomic) NSIndexPath *indexPathForContextActions;
 @property(assign, atomic) BOOL shouldAddCustomContextActions;
 @property(strong, nonatomic) LibraryRecentlyAddedViewController *currentLRAVC;
+@property(assign, nonatomic) CGFloat collectionViewCellSpacing;
+@property(assign, nonatomic) CGFloat otherPagesCollectionViewCellSpacing;
+@property(assign, nonatomic) CGSize collectionViewItemSize;
+@property(assign, nonatomic) CGSize otherPagesCollectionViewItemSize;
+@property(assign, nonatomic) CGFloat albumCellTextSpacing;
 
 + (void)load;
 + (instancetype)sharedInstance;
@@ -23,14 +28,9 @@
 - (BOOL)prefsBoolForKey:(NSString *)arg1;
 - (id)prefsObjectForKey:(NSString *)arg1;
 
-- (CGFloat)collectionViewCellSpacing;
-- (CGSize)collectionViewItemSize;
-- (CGFloat)otherPagesCollectionViewCellSpacing;
-- (CGSize)otherPagesCollectionViewItemSize;
 - (void)checkClearPins;
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender;
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
-
-// -(int)test;
+- (void)updateCollectionViewLayoutValues;
 
 @end
