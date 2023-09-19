@@ -73,10 +73,12 @@
         RecentlyAddedManager *recentlyAddedManager = [dataSource recentlyAddedManager];
         Album *album = [recentlyAddedManager albumWithIdentifier:[self identifier]];
         
-        if (wiggleManager && ![album isFakeAlbum]) {
-            [wiggleManager inWiggleMode] ? [self addShakeAnimation] : [self removeShakeAnimation];
-        } else if ([album isFakeAlbum]) {
-            [self removeShakeAnimation];
+        if ([meloManager prefsBoolForKey:@"wiggleModeShakeAnimationsEnabled"]) {
+            if (wiggleManager && ![album isFakeAlbum]) {
+                [wiggleManager inWiggleMode] ? [self addShakeAnimation] : [self removeShakeAnimation];
+            } else if ([album isFakeAlbum]) {
+                [self removeShakeAnimation];
+            }
         }
 
         [self layoutWiggleModeFakeAlbumViews];   
@@ -468,7 +470,8 @@
         [endWiggleButton addTarget:self action:@selector(endWiggleMode) forControlEvents:UIControlEventTouchUpInside];
         [endWiggleButton addTarget:self action:@selector(triggerHapticFeedback) forControlEvents:UIControlEventTouchUpInside];
         endWiggleButton.frame = CGRectMake(screenSize.width / 8, 10, screenSize.width * .75, 30);
-        [endWiggleButton setTitle:@"End Wiggle Mode" forState:UIControlStateNormal];
+        NSString *endWiggleModeTitle = [meloManager prefsBoolForKey:@"wiggleModeShakeAnimationsEnabled"] ? @"End Wiggle Mode" : @"End \"Wiggle\" Mode";
+        [endWiggleButton setTitle:endWiggleModeTitle forState:UIControlStateNormal];
         [endWiggleButton setTitleColor:[UIColor labelColor] forState:UIControlStateNormal];
         endWiggleButton.backgroundColor = [MeloUtils dictToColor:[meloManager prefsObjectForKey:@"customTintColor"]];
         endWiggleButton.layer.cornerRadius = 8;

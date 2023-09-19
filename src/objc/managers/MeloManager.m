@@ -108,7 +108,8 @@ static MeloManager *sharedMeloManager;
         @"mainLayoutAffectsOtherAlbumPagesEnabled": @YES,
         @"textLayoutAffectsOtherAlbumPagesEnabled": @NO,
         @"customAlbumCellFontSizeEnabled": @NO,
-        @"customAlbumCellFontSize": @12
+        @"customAlbumCellFontSize": @12,
+        @"wiggleModeShakeAnimationsEnabled": @YES
         // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
         };
     _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
