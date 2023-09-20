@@ -64,7 +64,7 @@
 			<key>key</key>
 			<string>renameRecentlyAddedSectionEnabled</string>
 			<key>label</key>
-			<string>Rename Recently Added</string>
+			<string>Rename Recently Added Enabled</string>
 		</dict>
 		<dict>
 			<key>cellClass</key>

@@ -71,6 +71,17 @@
     [self updateSpecifier];
 }
 
+// clears out custom text in the text field and the specifier
+- (void)clearText {
+
+    NSMutableDictionary *properties = [self specifier].properties;
+    properties[@"customSectionTitle"] = @"";
+    properties[@"customSectionSubtitle"] = @"";
+
+    _titleTextField.text = @"";
+    _subtitleTextField.text = @"";
+}
+
 // updates the specifier with the current text field contents
 - (void)updateSpecifier {
 
@@ -109,6 +120,6 @@
     _titleTextField.frame = titleFrame;
     _subtitleTextField.frame = subtitleFrame;
     _verticalSeparatorView.frame = separatorFrame;
-}    
+}
 
 @end

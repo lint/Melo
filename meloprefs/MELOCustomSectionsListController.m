@@ -324,6 +324,12 @@
 			[self removeSpecifier:specifier animated:YES];
 		}
 
+		// reset the custom recently added info
+		id customRecentCell = [self cachedCellForSpecifier:[self customRecentlyAddedInfoSpecifier]];
+		if (customRecentCell) {
+			[customRecentCell clearText];
+		}
+
 		[self saveData];
 	// }];
 

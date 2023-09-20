@@ -20,4 +20,5 @@
 - (id)initWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2;
 - (void)updateSpecifier;
 - (void)saveData;
+- (void)clearText;
 @end
