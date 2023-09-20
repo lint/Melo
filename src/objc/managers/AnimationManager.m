@@ -61,6 +61,7 @@
         [UIView setAnimationDuration:0.2];
         [UIView setAnimationDelegate:self];
         [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+            
             textStackView.alpha = 1;
 
             if (customTextView) {

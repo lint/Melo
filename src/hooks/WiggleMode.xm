@@ -99,6 +99,7 @@
     UIView *wiggleModeFakeAlbumView = [self wiggleModeFakeAlbumView];
     UIImageView *wiggleModeFakeAlbumIconView = [self wiggleModeFakeAlbumIconView];
     UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
+    // UIView *customTextView = [self respondsToSelector:@selector(customTextView)] ? [self customTextView] : nil;
     
     if ([album isFakeAlbum] && wiggleModeFakeAlbumView) {
         
@@ -686,6 +687,14 @@
     CGPoint effectiveArtworkCenter = CGPointMake(cell.frame.origin.x + cell.frame.size.width/2, cell.frame.origin.y + cell.frame.size.width/2);
     CGPoint targetCenter = [[[self parentViewController] view] convertPoint:effectiveArtworkCenter fromView:collectionView]; // old code
 
+    // NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:@{
+    //     @"cell": cell,
+    //     @"artworkView": artworkView,
+    //     @"wiggleManager": wiggleManager,
+    //     @"draggingView": draggingView,
+    //     @"textStackView": MSHookIvar<UIView *>(cell, "textStackView")
+    // }];
+
     NSDictionary *context = @{
         @"cell": cell,
         @"artworkView": artworkView,
@@ -693,6 +702,10 @@
         @"draggingView": draggingView,
         @"textStackView": MSHookIvar<UIView *>(cell, "textStackView")
     };
+
+    // if ([cell respondsToSelector:@selector(customTextView)]) {
+    //     context[@"customTextView"] = [self customTextView];
+    // }
 
     [UIView beginAnimations:@"MELO_ANIMATION_END_DRAG" context:(__bridge_retained void *)context];
     [UIView setAnimationDuration:0.4];

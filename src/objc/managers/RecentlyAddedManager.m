@@ -454,12 +454,12 @@
             [defaultsSections addObject:section];
         }
     }
-    [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
+    // [[Logger sharedInstance] logStringWithFormat:@"data: %@", data];
 
     // custom sections are enabled - sync custom sections from prefs and user defaults
     if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
 
-        [[Logger sharedInstance] logString:@"custom sections are enabled"];
+        // [[Logger sharedInstance] logString:@"custom sections are enabled"];
 
         // iterate over every custom section loaded from preferences
         for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
@@ -489,7 +489,7 @@
     // custom sections are disabled - check if a pinned section exists
     } else {
 
-        [[Logger sharedInstance] logString:@"custom sections are disabled"];
+        // [[Logger sharedInstance] logString:@"custom sections are disabled"];
 
         // // create section and album objects
         // if (data) {

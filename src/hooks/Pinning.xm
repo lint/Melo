@@ -206,7 +206,9 @@
     [self setWiggleModeManager:wiggleManager];
     [self setAnimationManager:animationManager];
     
-    return %orig;
+    id orig = %orig;
+    [Logger logStringWithFormat:@"orig: %p, class: %@", orig, [orig class]];
+    return orig;
 }
 
 - (void)viewWillAppear:(BOOL)arg1 {
@@ -263,6 +265,7 @@
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewDidDisappear:(%i)", self, arg1]];
 
     // [[self recentlyAddedManager] setAttemptedDataLoad:NO];
+    [[MeloManager sharedInstance] setCurrentLRAVC:nil];
 }
 
 - (void)viewDidLoad {
@@ -344,7 +347,7 @@
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)arg1 viewForSupplementaryElementOfKind:(id)arg2 atIndexPath:(NSIndexPath *)arg3 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) viewForSupplementaryElementOfKind:(%@) atIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) viewForSupplementaryElementOfKind:(%@) atIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
     
     // get the recently added manager
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
@@ -381,7 +384,7 @@
 
 // - (void)collectionView:(UICollectionView *)arg1 didEndDisplayingSupplementaryView:(UICollectionReusableView *)arg2 forElementOfKind:(id)arg3 atIndexPath:(NSIndexPath *)arg4 {
 - (void)collectionView:(id)arg1 didEndDisplayingSupplementaryView:(id)arg2 forElementOfKind:(id)arg3 atIndexPath:(id)arg4 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didEndDisplayingSupplementaryView:(%@) forElementOfKind:(%@) atIndexPath:<%@>", self, arg1, arg2, arg3, arg4]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didEndDisplayingSupplementaryView:(%@) forElementOfKind:(%@) atIndexPath:<%@>", self, arg1, arg2, arg3, arg4]];
 
     // get the recently added manager
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
@@ -398,7 +401,7 @@
 /* methods that deal with displaying albums */
 
 - (id)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) cellForItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) cellForItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
 
     id orig;
 
@@ -409,7 +412,7 @@
     } else {
         Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:arg2];
         NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
-        [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
+        // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
 
         // use the injected data
         orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
@@ -469,7 +472,7 @@
 }
 
 - (void)collectionView:(UICollectionView *)arg1 willDisplayCell:(id)arg2 forItemAtIndexPath:(NSIndexPath *)arg3 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) willDisplayCell:(%p) forItemAtIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) willDisplayCell:(%p) forItemAtIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
 
     // TODO: in old code, contained some checks for if the requested item is out of bounds for some reason
     // i remember this fixing some crash, due to the system using the default index paths to request but not being able to properly translate them?
@@ -483,7 +486,7 @@
     }
     NSIndexPath *adjustedIndexPath = [recentlyAddedManager translateIndexPath:arg3];
 
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"adjustedIndexPath:<%ld-%ld>", adjustedIndexPath.section, adjustedIndexPath.item]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"adjustedIndexPath:<%ld-%ld>", adjustedIndexPath.section, adjustedIndexPath.item]];
 
     // use injected data
     %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
@@ -502,7 +505,7 @@
 }
 
 - (void)collectionView:(UICollectionView *)arg1 didEndDisplayingCell:(id)arg2 forItemAtIndexPath:(NSIndexPath *)arg3 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didEndDisplayingCell:(%p) forItemAtIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didEndDisplayingCell:(%p) forItemAtIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
     
     // in old code, this did not ever inject a different index path, it just called %orig, so maybe do that again here as well..
     
@@ -1046,6 +1049,12 @@
     [[Logger sharedInstance] logStringWithFormat:@"UIMenu result: %@", orig];
     return orig;
 }
+
+// + (UIMenu *)menuWithTitle:(NSString *)title image:(UIImage *)image identifier:(UIMenuIdentifier)identifier options:(UIMenuOptions)options children:(NSArray<UIMenuElement *> *)children {
+
+//     [Logger logStringWithFormat:@"UIMenu: menuWithTitle: %@, identifier: %@, children: %@", title, identifier, children];
+//     return %orig;
+// }
 
 %end
 
