@@ -73,6 +73,17 @@
     }
 }
 
+// attempts to show / hide the custom text view
+%new
+- (void)setCustomTextViewHidden:(BOOL)arg1 {
+
+    AlbumCellTextView *customTextView = [self customTextView];
+
+    if (customTextView) {
+        [customTextView setHidden:arg1];
+    }
+}
+
 // creates a new subview which redraws the album text 
 %new
 - (void)createCustomTextView {

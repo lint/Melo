@@ -101,7 +101,9 @@
     UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
     
     if ([album isFakeAlbum] && wiggleModeFakeAlbumView) {
-        wiggleModeFakeAlbumView.frame = [self bounds];
+        
+        // doesn't need to be artworkView necessarily
+        wiggleModeFakeAlbumView.frame = CGRectMake(0, 0, artworkView.frame.size.width, artworkView.frame.size.width);
 
         CGFloat radius;            
         if ([meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"]) {
@@ -121,9 +123,25 @@
             wiggleModeFakeAlbumIconView.center = wiggleModeFakeAlbumView.center;
         }
 
+        if ([self respondsToSelector:@selector(setTextAndBadgeHidden:)]) {
+            [self setTextAndBadgeHidden:YES];
+        }
+
+        if ([self respondsToSelector:@selector(setCustomTextViewHidden:)]) {
+            [self setCustomTextViewHidden:YES];
+        }
+
     } else if (wiggleModeFakeAlbumView) {
         wiggleModeFakeAlbumView.hidden = YES;
         artworkView.hidden = NO;
+
+        if ([self respondsToSelector:@selector(setTextAndBadgeHidden:)]) {
+            [self setTextAndBadgeHidden:NO];
+        }
+
+        if ([self respondsToSelector:@selector(setCustomTextViewHidden:)]) {
+            [self setCustomTextViewHidden:NO];
+        }
 
         if (wiggleModeFakeAlbumIconView) {
             wiggleModeFakeAlbumIconView.hidden = YES;
@@ -566,16 +584,21 @@
         artworkView.alpha = 0;
 
         UIView *textStackView = MSHookIvar<UIView *>(cell, "textStackView");
+        UIView *customTextView = [cell respondsToSelector:@selector(customTextView)] ? [cell customTextView] : nil;
 
         NSDictionary *context = @{
             @"cell": cell
         };
-            
+
         [UIView beginAnimations:@"MELO_ANIMATION_HIDE_ALBUM_TEXT_ON_DRAG" context:(__bridge_retained void *)context];
         [UIView setAnimationDuration:0.2];
         [UIView setAnimationDelegate:[self animationManager]];
         [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
             textStackView.alpha = 0;
+
+            if (customTextView) {
+                customTextView.alpha = 0;
+            }
         [UIView commitAnimations];
 
 
@@ -660,7 +683,8 @@
     AlbumCell *cell = (AlbumCell *)[collectionView cellForItemAtIndexPath:draggingIndexPath];
     UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(cell, "artworkComponent"), "imageView");
     // CGPoint targetCenter = [[[self parentViewController] view] convertPoint:artworkView.center fromView:cell];
-    CGPoint targetCenter = [[[self parentViewController] view] convertPoint:cell.center fromView:collectionView]; // old code
+    CGPoint effectiveArtworkCenter = CGPointMake(cell.frame.origin.x + cell.frame.size.width/2, cell.frame.origin.y + cell.frame.size.width/2);
+    CGPoint targetCenter = [[[self parentViewController] view] convertPoint:effectiveArtworkCenter fromView:collectionView]; // old code
 
     NSDictionary *context = @{
         @"cell": cell,
@@ -674,7 +698,6 @@
     [UIView setAnimationDuration:0.4];
     [UIView setAnimationDelegate:[self animationManager]];
     [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
-    [UIView setAnimationDuration:0.4];
 
         draggingView.center = targetCenter;
         draggingView.transform = CGAffineTransformIdentity;

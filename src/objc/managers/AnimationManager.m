@@ -1,6 +1,7 @@
 
 #import "AnimationManager.h"
 #import "../utilities/utilities.h"
+#import "../../interfaces/interfaces.h"
 #import "WiggleModeManager.h"
 
 // this is used to handle completion code for animations, unfortunately required since blocks don't work when patching with Allemand
@@ -36,14 +37,19 @@
     } else if ([@"MELO_ANIMATION_END_DRAG" isEqualToString:animationID]) {
 
         WiggleModeManager *wiggleManager = ctx[@"wiggleManager"];
-        UIView *cell = ctx[@"cell"];
+        AlbumCell *cell = ctx[@"cell"];
         UIView *artworkView = ctx[@"artworkView"];
         UIView *textStackView = ctx[@"textStackView"];
+        UIView *customTextView = [cell respondsToSelector:@selector(customTextView)] ? [cell customTextView] : nil;
 
         cell.hidden = NO;
         //cell.alpha = 1; // old code
         artworkView.alpha = 1;
         textStackView.alpha = 0;
+
+        if (customTextView) {
+            customTextView.alpha = 0;
+        }
 
         wiggleManager.draggingView = nil;
         wiggleManager.draggingIndexPath = nil;
@@ -56,6 +62,10 @@
         [UIView setAnimationDelegate:self];
         [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
             textStackView.alpha = 1;
+
+            if (customTextView) {
+                customTextView.alpha = 1;
+            }
         [UIView commitAnimations];
 
         //[collectionView.collectionViewLayout invalidateLayout]; //do I need this? // old code

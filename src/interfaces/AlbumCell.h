@@ -19,6 +19,7 @@
 - (void)addShakeAnimation;
 - (void)removeShakeAnimation;
 - (void)setTextAndBadgeHidden:(BOOL)arg1;
+- (void)setCustomTextViewHidden:(BOOL)arg1;
 - (void)createWiggleModeFakeAlbumView;
 - (void)layoutWiggleModeFakeAlbumViews;
 - (void)createCustomTextView;
