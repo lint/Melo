@@ -970,7 +970,7 @@
                 }
 
                 Section *section = [recentlyAddedManager sectionAtIndex:i];
-                NSString *title = [NSString stringWithFormat:@"Move to '%@'", section.title];
+                NSString *title = [NSString stringWithFormat:@"Move to '%@'", [section displayTitle]];
                 NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
 
                 [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];

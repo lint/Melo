@@ -64,7 +64,7 @@
 
         Section *section = [recentlyAddedManager sectionAtIndex:i];
         [Logger logStringWithFormat:@"%@", section];
-        NSString *sectionTitle = [section.title copy];
+        NSString *sectionTitle = [section displayTitle];
         [Logger logStringWithFormat:@"sectionTitle: %@", sectionTitle];
         // NSString *title = [NSString stringWithFormat:@"Move to '%@'", sectionTitle]; // this broke for some reason... it started filling it with garbage? even tho the string was fine? idk
         NSString *title = [@"Move to: " stringByAppendingString:sectionTitle ?: @"<no title>"];

@@ -31,6 +31,7 @@
 - (BOOL)isEmpty;
 - (Section *)copy;
 - (NSDictionary *)toDictionary;
+- (NSString *)displayTitle;
 
 + (instancetype)emptyRecentSection;
 + (instancetype)emptyPinnedSection;

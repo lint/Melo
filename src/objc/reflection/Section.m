@@ -188,4 +188,22 @@
     return [[Section alloc] initWithIdentifier:@"MELO_PINNED_SECTION" title:@"Pinned" subtitle:nil];
 }
 
+// 
+- (NSString *)displayTitle {
+
+    if (self.title) {
+        return self.title;
+    }
+
+    if ([self.identifier isEqualToString:@"MELO_RECENTLY_ADDED_SECTION"]) {
+
+        NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
+        return NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
+    } else if ([self.identifier isEqualToString:@"MELO_PINNED_SECTION"]) {
+        return @"Pinned";
+    } 
+
+    return nil;
+}
+
 @end
