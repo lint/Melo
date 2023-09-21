@@ -13,3 +13,9 @@
 - (void)_updatePanGesture;
 - (void)_notifyDidScroll;
 @end
+
+@interface UIContextMenuConfiguration ()
+// @property(strong, nonatomic) UIContextMenuActionProvider actionProvider;
+- (UIContextMenuActionProvider)actionProvider;
+- (void)setActionProvider:(UIContextMenuActionProvider)arg1;
+@end

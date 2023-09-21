@@ -451,10 +451,44 @@
     meloManager.indexPathForContextMenuOverride = arg2;
 
     // use injected data
-    id orig = %orig(arg1, realIndexPath, arg3);
+    UIContextMenuConfiguration *orig = %orig(arg1, realIndexPath, arg3);
 
     // reset override value
     meloManager.indexPathForContextMenuOverride = nil;
+
+    if (![meloManager prefsBoolForKey:@"customActionMenuEnabled"]) {
+
+        UIContextMenuActionProvider actionProvider = [orig actionProvider];
+
+        UIContextMenuActionProvider providerWrapper = ^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
+
+            UIMenu *origMenu = actionProvider(suggestedActions);
+
+            NSMutableArray *children = [NSMutableArray arrayWithArray:[origMenu children]];
+
+            // TODO: place injected actions here ...
+
+            UIAction *testAction = [UIAction actionWithTitle:@"TEST PLS" image:[UIImage systemImageNamed:@"wrench.fill"] identifier:@"MELO_ACTION_WIGGLE" handler:^(UIAction *action) {
+                
+            }];
+
+            [children addObject:testAction];
+
+            MSHookIvar<NSArray *>(origMenu, "_children") = children;
+
+            return origMenu;
+        };
+
+        // MSHookIvar<UIContextMenuActionProvider>(orig, "_actionProvider")
+        [orig setActionProvider:providerWrapper];
+
+    }
+
+
+
+
+
+
 
     return orig;
 }
