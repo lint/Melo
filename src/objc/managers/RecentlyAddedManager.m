@@ -599,4 +599,13 @@
     }
 }
 
+// determines if a context menu should be allowed based on the downloaded music settings
+- (BOOL)shouldAllowDownloadedMusicContextMenu {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    // do not allow if this is downloaded music and pinning is disabled or if it's enabled and syncinging pins is enabled
+    return !self.isDownloadedMusic || ([meloManager prefsBoolForKey:@"downloadedPinningEnabled"] && ![meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]);
+}
+
 @end

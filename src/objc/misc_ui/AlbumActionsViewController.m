@@ -159,14 +159,14 @@
     }
 
     if ([ident isEqualToString:@"MELO_ACTION_SHIFT_LEFT"]) {
-        [_libraryRecentlyAddedViewController handleShiftAction:YES];
+        [_libraryRecentlyAddedViewController handleActionShiftAlbumAtIndexPath:self.albumAdjustedIndexPath movingLeft:YES];
     } else if ([ident isEqualToString:@"MELO_ACTION_SHIFT_RIGHT"]) {
-        [_libraryRecentlyAddedViewController handleShiftAction:NO];
+        [_libraryRecentlyAddedViewController handleActionShiftAlbumAtIndexPath:self.albumAdjustedIndexPath movingLeft:NO];
     } else if ([ident isEqualToString:@"MELO_ACTION_WIGGLE"]) {
         [_libraryRecentlyAddedViewController toggleWiggleMode];
     } else {
         NSInteger sectionIndex = [_recentlyAddedManager sectionIndexForIdentifier:ident];
-        [_libraryRecentlyAddedViewController handleMoveToSectionAction:sectionIndex];
+        [_libraryRecentlyAddedViewController handleActionMoveAlbumAtIndexPath:self.albumAdjustedIndexPath toSection:sectionIndex];
     }
 }
 

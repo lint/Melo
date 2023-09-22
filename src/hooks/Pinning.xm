@@ -432,6 +432,7 @@
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     MeloManager *meloManager = [MeloManager sharedInstance];
+
     if (![recentlyAddedManager isReadyForUse]) {
         return %orig;
     } else if ([self wiggleModeManager].inWiggleMode) {
@@ -442,53 +443,42 @@
         return nil;
     }
 
-    // get the real index path for the adjusted index path
-    NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
-
     // set various values for override
-    meloManager.shouldAddCustomContextActions = YES;
-    meloManager.indexPathForContextActions = arg2;
+    // meloManager.shouldAddCustomContextActions = YES;
+    // meloManager.indexPathForContextActions = arg2;
     meloManager.indexPathForContextMenuOverride = arg2;
 
     // use injected data
-    UIContextMenuConfiguration *orig = %orig(arg1, realIndexPath, arg3);
+    UIContextMenuConfiguration *orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2], arg3);
 
     // reset override value
     meloManager.indexPathForContextMenuOverride = nil;
 
-    if (![meloManager prefsBoolForKey:@"customActionMenuEnabled"]) {
-
+    // inject custom context menu actions
+    if (![meloManager prefsBoolForKey:@"customActionMenuEnabled"] && [recentlyAddedManager shouldAllowDownloadedMusicContextMenu]) {
+        
+        // create a new block that uses the current action provider
         UIContextMenuActionProvider actionProvider = [orig actionProvider];
-
         UIContextMenuActionProvider providerWrapper = ^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
 
             UIMenu *origMenu = actionProvider(suggestedActions);
+            NSArray *customActions = [self customContextActionsForAlbumAtIndexPath:arg2];
+            NSArray *newChildren;
 
-            NSMutableArray *children = [NSMutableArray arrayWithArray:[origMenu children]];
+            // placing custom actions at top or bottom of the menu
+            BOOL placeMenuAtTop = [[meloManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0;
+            if (placeMenuAtTop) {
+                newChildren = [customActions arrayByAddingObjectsFromArray:[origMenu children]];
+            } else {
+                newChildren = [[origMenu children] arrayByAddingObjectsFromArray:customActions];
+            }
 
-            // TODO: place injected actions here ...
-
-            UIAction *testAction = [UIAction actionWithTitle:@"TEST PLS" image:[UIImage systemImageNamed:@"wrench.fill"] identifier:@"MELO_ACTION_WIGGLE" handler:^(UIAction *action) {
-                
-            }];
-
-            [children addObject:testAction];
-
-            MSHookIvar<NSArray *>(origMenu, "_children") = children;
-
+            MSHookIvar<NSArray *>(origMenu, "_children") = newChildren;
             return origMenu;
         };
 
-        // MSHookIvar<UIContextMenuActionProvider>(orig, "_actionProvider")
         [orig setActionProvider:providerWrapper];
-
     }
-
-
-
-
-
-
 
     return orig;
 }
@@ -501,7 +491,7 @@
 
     // reset override value
     MeloManager *meloManager = [MeloManager sharedInstance];
-    meloManager.shouldAddCustomContextActions = NO;
+    // meloManager.shouldAddCustomContextActions = NO;
     //meloManager.indexPathForContextMenuOverride = nil; // TODO: commented out in old code, remove?
 }
 
@@ -675,19 +665,21 @@
 }
 
 %new
-- (void)handleMoveToSectionAction:(NSInteger)sectionIndex {
+// - (void)handleMoveToSectionAction:(NSInteger)sectionIndex {
+- (void)handleActionMoveAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath toSection:(NSInteger)sectionIndex {
     [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleMoveToSectionAction:(%ld)", self, sectionIndex];
 
+    // TODO: eh do i really worry about this?
     // ideally, if moving the album back into the recently added section, it will move it to the album's proper place
     // for now tho, i'll just move it to the first spot, then it will move back whenever the app is refreshed since the recently added section is not saved
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    MeloManager *meloManager = [MeloManager sharedInstance];
+    // MeloManager *meloManager = [MeloManager sharedInstance];
 
-    NSIndexPath *sourceAdjustedIndexPath = meloManager.indexPathForContextActions;
+    // NSIndexPath *sourceAdjustedIndexPath = meloManager.indexPathForContextActions;
     NSIndexPath *destAdjustedIndexPath = [NSIndexPath indexPathForItem:0 inSection:sectionIndex];
 
-    [[Logger sharedInstance] logStringWithFormat:@"indexPathForContextActions: %@", meloManager.indexPathForContextActions];
+    // [[Logger sharedInstance] logStringWithFormat:@"indexPathForContextActions: %@", meloManager.indexPathForContextActions];
 
     // commented out so that the block does not cause a crash while patching with allemand
     // // perform the move operation
@@ -700,22 +692,23 @@
 }
 
 %new 
-- (void)handleShiftAction:(BOOL)isMovingLeft {
+// - (void)handleShiftAction:(BOOL)isMovingLeft {
+- (void)handleActionShiftAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath movingLeft:(BOOL)isMovingLeft {
     [[Logger sharedInstance] logStringWithFormat:@"LRAVC: %p - handleShiftAction:isMovingLeft:(%i)", self, isMovingLeft];
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    MeloManager *meloManager = [MeloManager sharedInstance];
+    // MeloManager *meloManager = [MeloManager sharedInstance];
 
-    NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
+    // NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
+    // NSIndexPath *sourceAdjustedIndexPath = indexPathForContextActions;
 
-    NSIndexPath *sourceAdjustedIndexPath = indexPathForContextActions;
     NSIndexPath *destAdjustedIndexPath;
     
     // the destination is one to the left or right of the current item
     if (isMovingLeft) {
-        destAdjustedIndexPath = [NSIndexPath indexPathForItem:indexPathForContextActions.item - 1 inSection:indexPathForContextActions.section];
+        destAdjustedIndexPath = [NSIndexPath indexPathForItem:sourceAdjustedIndexPath.item - 1 inSection:sourceAdjustedIndexPath.section];
     } else {
-        destAdjustedIndexPath = [NSIndexPath indexPathForItem:indexPathForContextActions.item + 1 inSection:indexPathForContextActions.section];
+        destAdjustedIndexPath = [NSIndexPath indexPathForItem:sourceAdjustedIndexPath.item + 1 inSection:sourceAdjustedIndexPath.section];
     }
 
     // commented out so that the block does not cause a crash while patching with allemand
@@ -833,7 +826,7 @@
         albumActionsVC.libraryRecentlyAddedViewController = self;
         albumActionsVC.recentlyAddedManager = recentlyAddedManager;
         albumActionsVC.albumAdjustedIndexPath = indexPath;
-        meloManager.indexPathForContextActions = indexPath;
+        // meloManager.indexPathForContextActions = indexPath;
 
         albumActionsVC.modalPresentationStyle = UIModalPresentationPopover;
         albumActionsVC.preferredContentSize = CGSizeMake(280, 230);
@@ -846,6 +839,96 @@
         [self presentViewController:albumActionsVC animated:YES completion:nil];
         // [self pushViewController:albumActionsVC animated:YES];
     }
+}
+
+%new
+// generate a UIMenu with actions to be added to the context menu for an album at an adjusted index path
+- (NSArray *)customContextActionsForAlbumAtIndexPath:(NSIndexPath *)indexPathForContextActions {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+
+    NSMutableArray *actions = [NSMutableArray array];
+
+    // add the move to section actions 
+    if ([meloManager prefsBoolForKey:@"showMoveActionsEnabled"]) {
+        
+        // place all move actions into a submenu
+        BOOL displayMoveActionsInline = YES; // TODO: old code had this as a setting, default to yes for now 
+        NSMutableArray *subMenuActions = [NSMutableArray array];
+
+        // iterate over every section
+        for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
+
+            [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
+            
+            // don't have move action to current section
+            if (i == indexPathForContextActions.section) {
+                continue;
+            }
+
+            Section *section = [recentlyAddedManager sectionAtIndex:i];
+            NSString *title = [NSString stringWithFormat:@"Move to '%@'", [section displayTitle]];
+            NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
+
+            [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
+
+            // create the action
+            UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
+                [self handleActionMoveAlbumAtIndexPath:indexPathForContextActions toSection:i];
+            }];
+            [subMenuActions addObject:subMenuAction];
+
+            [[Logger sharedInstance] logString:@"added to submenuactions array"];
+        }
+
+        // only create the submenu if there is more than one action
+        if ([subMenuActions count] > 1) {
+            UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
+                options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
+            [actions addObject:subMenu];
+        
+        // if there is only one action, just add that action
+        } else if ([subMenuActions count] == 1) {
+            [actions addObject:subMenuActions[0]];
+        }
+    }
+
+    // shift left / right actions
+    if ([meloManager prefsBoolForKey:@"showShiftActionsEnabled"]) {
+
+        // add shift left action if possible
+        if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
+            UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
+                [self handleActionShiftAlbumAtIndexPath:indexPathForContextActions movingLeft:YES];
+            }];
+            [actions addObject:shiftLeftAction];
+        }
+
+        // add shift right action if possible
+        if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
+            UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
+                [self handleActionShiftAlbumAtIndexPath:indexPathForContextActions movingLeft:NO];
+            }];
+            [actions addObject:shiftRightAction];
+        }
+    }
+
+    // add wiggle mode action
+    if ([meloManager prefsBoolForKey:@"showWiggleModeActionEnabled"]) {
+        UIAction *wiggleAction = [UIAction actionWithTitle:@"Wiggle Mode" image:[UIImage systemImageNamed:@"wrench.fill"] identifier:@"MELO_ACTION_WIGGLE" handler:^(UIAction *action) {
+            [self toggleWiggleMode];
+        }];
+        [actions addObject:wiggleAction];
+    }
+
+    // placing all custom actions into a submenu
+    if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
+        UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU" options:0 children:actions];
+        actions = [NSMutableArray arrayWithObjects:subMenu, nil];
+    }
+
+	return actions;
 }
 
 %end
@@ -914,183 +997,183 @@
 %end
 
 // adding custom actions to the context menu
-%hook UIMenu
+// %hook UIMenu
 
-// not the best method to inject custom actions into, but the one i could find that works for the moment
-- (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
-    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
+// // not the best method to inject custom actions into, but the one i could find that works for the moment
+// - (UIMenu *)menuByReplacingChildren:(NSArray<UIMenuElement *> *)arg1 {
+//     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"UIMenu: %@ - menuByReplacingChildren:(%@)", self, arg1]];
 
-    MeloManager *meloManager = [MeloManager sharedInstance];
-    LibraryRecentlyAddedViewController *currentLRAVC = [meloManager currentLRAVC];
-    RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
+//     MeloManager *meloManager = [MeloManager sharedInstance];
+//     LibraryRecentlyAddedViewController *currentLRAVC = [meloManager currentLRAVC];
+//     RecentlyAddedManager *recentlyAddedManager = [currentLRAVC recentlyAddedManager];
 
-    NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
-    BOOL shouldAddCustomContextActions = meloManager.shouldAddCustomContextActions;
+//     NSIndexPath *indexPathForContextActions = meloManager.indexPathForContextActions;
+//     BOOL shouldAddCustomContextActions = meloManager.shouldAddCustomContextActions;
 
-    if ([meloManager prefsBoolForKey:@"customActionMenuEnabled"] || !currentLRAVC) {
-        return %orig;
-    }
+//     if ([meloManager prefsBoolForKey:@"customActionMenuEnabled"] || !currentLRAVC) {
+//         return %orig;
+//     }
 
-    // [[Logger sharedInstance] logString:@"children:"];
-    // for (id child in arg1) {
-    //     [[Logger sharedInstance] logStringWithFormat:@"\tchild identifier: %@, child: %@", [child identifier], child];
-    // }
+//     // [[Logger sharedInstance] logString:@"children:"];
+//     // for (id child in arg1) {
+//     //     [[Logger sharedInstance] logStringWithFormat:@"\tchild identifier: %@, child: %@", [child identifier], child];
+//     // }
 
-    // do not attempt to inject custom context actions in the recently downloaded page if pinning there is disabled or if pins are synced from the full library
-    if (recentlyAddedManager.isDownloadedMusic && (![meloManager prefsBoolForKey:@"downloadedPinningEnabled"] || [meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"])) {
-        return %orig;
-    }
+//     // do not attempt to inject custom context actions in the recently downloaded page if pinning there is disabled or if pins are synced from the full library
+//     if (recentlyAddedManager.isDownloadedMusic && (![meloManager prefsBoolForKey:@"downloadedPinningEnabled"] || [meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"])) {
+//         return %orig;
+//     }
 
-    // without the identifer check, when adding actions to the bottom of the list it worked perfectly, but adding to the top would create 3 duplicate actions. why? who could know..
-    if (!shouldAddCustomContextActions) {
-        return %orig;
-    }
+//     // without the identifer check, when adding actions to the bottom of the list it worked perfectly, but adding to the top would create 3 duplicate actions. why? who could know..
+//     if (!shouldAddCustomContextActions) {
+//         return %orig;
+//     }
 
-    [[Logger sharedInstance] logStringWithFormat:@"shouldAddCustomContextActions: %i, indexPathForContextActions: %@", shouldAddCustomContextActions, indexPathForContextActions];
+//     [[Logger sharedInstance] logStringWithFormat:@"shouldAddCustomContextActions: %i, indexPathForContextActions: %@", shouldAddCustomContextActions, indexPathForContextActions];
 
-    // detect if the menu already has the injected context actions
-    BOOL containsInjectedActions = NO;
+//     // detect if the menu already has the injected context actions
+//     BOOL containsInjectedActions = NO;
 
-    // iterate over every child menu element
-    for (id child in arg1) {
+//     // iterate over every child menu element
+//     for (id child in arg1) {
 
-        // check if the child is an action and if so check its identifier prefix
-        if ([child respondsToSelector:@selector(identifier)] && [[child identifier] hasPrefix:@"MELO_ACTION"]) {
-            containsInjectedActions = YES;
-            break;
-        }
+//         // check if the child is an action and if so check its identifier prefix
+//         if ([child respondsToSelector:@selector(identifier)] && [[child identifier] hasPrefix:@"MELO_ACTION"]) {
+//             containsInjectedActions = YES;
+//             break;
+//         }
 
-        // if child is a submenu, check if every one of its children is an action and if so has the right prefix
-        if ([child isKindOfClass:[UIMenu class]]) {
-            for (id subchild in [child children]) {
-                if ([subchild respondsToSelector:@selector(identifier)] && [[subchild identifier] hasPrefix:@"MELO_ACTION"]) {
-                    containsInjectedActions = YES;
-                    break;
-                }
-            }
-        }
-    }
+//         // if child is a submenu, check if every one of its children is an action and if so has the right prefix
+//         if ([child isKindOfClass:[UIMenu class]]) {
+//             for (id subchild in [child children]) {
+//                 if ([subchild respondsToSelector:@selector(identifier)] && [[subchild identifier] hasPrefix:@"MELO_ACTION"]) {
+//                     containsInjectedActions = YES;
+//                     break;
+//                 }
+//             }
+//         }
+//     }
 
-    // no injected actions were added yet, do so now
-    if (!containsInjectedActions) {
-        [[Logger sharedInstance] logString:@"no previously injected actions detected"];
+//     // no injected actions were added yet, do so now
+//     if (!containsInjectedActions) {
+//         [[Logger sharedInstance] logString:@"no previously injected actions detected"];
 
-        if (!currentLRAVC) {
-            [[Logger sharedInstance] logString:@"no current LibraryRecentlyAddedViewController, this shouldn't happen..."];
-            return %orig;
-        }
+//         if (!currentLRAVC) {
+//             [[Logger sharedInstance] logString:@"no current LibraryRecentlyAddedViewController, this shouldn't happen..."];
+//             return %orig;
+//         }
 
-        [[Logger sharedInstance] logString:@"here1"];
+//         [[Logger sharedInstance] logString:@"here1"];
 
-        NSMutableArray *newActions = [NSMutableArray array];
-        // Album *targetAlbum = [recentlyAddedManager albumAtAdjustedIndexPath:indexPathForContextActions];
+//         NSMutableArray *newActions = [NSMutableArray array];
+//         // Album *targetAlbum = [recentlyAddedManager albumAtAdjustedIndexPath:indexPathForContextActions];
 
-        /* add the move to section action */
+//         /* add the move to section action */
 
-        // place all move actions into a submenu
-        BOOL displayMoveActionsInline = YES; // old code had this as a setting, default to yes for now 
-        NSMutableArray *subMenuActions = [NSMutableArray array];
+//         // place all move actions into a submenu
+//         BOOL displayMoveActionsInline = YES; // old code had this as a setting, default to yes for now 
+//         NSMutableArray *subMenuActions = [NSMutableArray array];
 
-        if ([meloManager prefsBoolForKey:@"showMoveActionsEnabled"]) {
+//         if ([meloManager prefsBoolForKey:@"showMoveActionsEnabled"]) {
 
-            // iterate over every section
-            for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
+//             // iterate over every section
+//             for (NSInteger i = 0; i < [recentlyAddedManager numberOfSections]; i++) {
 
-                [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
+//                 [[Logger sharedInstance] logStringWithFormat:@"%ld", i];
                 
-                // don't have move action to current section
-                if (i == indexPathForContextActions.section) {
-                    continue;
-                }
+//                 // don't have move action to current section
+//                 if (i == indexPathForContextActions.section) {
+//                     continue;
+//                 }
 
-                Section *section = [recentlyAddedManager sectionAtIndex:i];
-                NSString *title = [NSString stringWithFormat:@"Move to '%@'", [section displayTitle]];
-                NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
+//                 Section *section = [recentlyAddedManager sectionAtIndex:i];
+//                 NSString *title = [NSString stringWithFormat:@"Move to '%@'", [section displayTitle]];
+//                 NSString *ident = [NSString stringWithFormat:@"MELO_ACTION_MOVE_TO_%@", section.identifier];
 
-                [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
+//                 [[Logger sharedInstance] logStringWithFormat:@"section: %@", section];
 
-                // create the action
-                UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
-                    [currentLRAVC handleMoveToSectionAction:i];
-                }];
+//                 // create the action
+//                 UIAction *subMenuAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"arrow.swap"] identifier:ident handler:^(UIAction *action) {
+//                     [currentLRAVC handleMoveToSectionAction:i];
+//                 }];
 
-                [subMenuActions addObject:subMenuAction];
+//                 [subMenuActions addObject:subMenuAction];
 
-                [[Logger sharedInstance] logString:@"added to submenuactions array"];
-            }
+//                 [[Logger sharedInstance] logString:@"added to submenuactions array"];
+//             }
 
-            // only create the submenu if there is more than one action
-            if ([subMenuActions count] > 1) {
-                UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
-                    options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
+//             // only create the submenu if there is more than one action
+//             if ([subMenuActions count] > 1) {
+//                 UIMenu *subMenu = [UIMenu menuWithTitle:@"Move to Section" image:[UIImage systemImageNamed:@"arrow.swap"] identifier:@"MELO_ACTION_MOVE_TO_SECTION_MENU"
+//                     options:displayMoveActionsInline ? UIMenuOptionsDisplayInline : 0 children:subMenuActions];
 
-                [newActions addObject:subMenu];
-            } else if ([subMenuActions count] == 1) {
-                [newActions addObject:subMenuActions[0]];
-            }
-        }
+//                 [newActions addObject:subMenu];
+//             } else if ([subMenuActions count] == 1) {
+//                 [newActions addObject:subMenuActions[0]];
+//             }
+//         }
 
-        if ([meloManager prefsBoolForKey:@"showShiftActionsEnabled"]) {
+//         if ([meloManager prefsBoolForKey:@"showShiftActionsEnabled"]) {
 
-            // add shift left action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
-                UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:YES];
-                }];
+//             // add shift left action if possible
+//             if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:YES]) {
+//                 UIAction *shiftLeftAction = [UIAction actionWithTitle:@"Shift Left" image:[UIImage systemImageNamed:@"arrow.left"] identifier:@"MELO_ACTION_SHIFT_LEFT" handler:^(UIAction *action) {
+//                     [currentLRAVC handleShiftAction:YES];
+//                 }];
 
-                [newActions addObject:shiftLeftAction];
-            }
+//                 [newActions addObject:shiftLeftAction];
+//             }
 
-            // add shift right action if possible
-            if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
-                UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
-                    [currentLRAVC handleShiftAction:NO];
-                }];
+//             // add shift right action if possible
+//             if ([recentlyAddedManager canShiftAlbumAtAdjustedIndexPath:indexPathForContextActions movingLeft:NO]) {
+//                 UIAction *shiftRightAction = [UIAction actionWithTitle:@"Shift Right" image:[UIImage systemImageNamed:@"arrow.right"] identifier:@"RIGHT" handler:^(UIAction *action) {
+//                     [currentLRAVC handleShiftAction:NO];
+//                 }];
 
-                [newActions addObject:shiftRightAction];
-            }
-        }
+//                 [newActions addObject:shiftRightAction];
+//             }
+//         }
 
-        // add wiggle mode action if possible
-        if ([meloManager prefsBoolForKey:@"showWiggleModeActionEnabled"]) {
+//         // add wiggle mode action if possible
+//         if ([meloManager prefsBoolForKey:@"showWiggleModeActionEnabled"]) {
             
-            UIAction *wiggleAction = [UIAction actionWithTitle:@"Wiggle Mode" image:[UIImage systemImageNamed:@"wrench.fill"] identifier:@"MELO_ACTION_WIGGLE" handler:^(UIAction *action) {
-                [currentLRAVC toggleWiggleMode];
-            }];
+//             UIAction *wiggleAction = [UIAction actionWithTitle:@"Wiggle Mode" image:[UIImage systemImageNamed:@"wrench.fill"] identifier:@"MELO_ACTION_WIGGLE" handler:^(UIAction *action) {
+//                 [currentLRAVC toggleWiggleMode];
+//             }];
 
-            [newActions addObject:wiggleAction];
-        }
+//             [newActions addObject:wiggleAction];
+//         }
 
-        // placing all custom actions into a submenu
-        if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
-            UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
-                options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
+//         // placing all custom actions into a submenu
+//         if ([meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"]) {
+//             UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU"
+//                 options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:newActions];
 
-            newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
-        }
+//             newActions = [NSMutableArray arrayWithObjects:subMenu, nil];
+//         }
 
-        // placing custom actions at top or bottom
-        BOOL placeMenuAtTop = [[meloManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0;
+//         // placing custom actions at top or bottom
+//         BOOL placeMenuAtTop = [[meloManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0;
 
-        if (placeMenuAtTop) {
-            arg1 = [newActions arrayByAddingObjectsFromArray:arg1];
-        } else {
-            arg1 = [arg1 arrayByAddingObjectsFromArray:newActions];
-        }
-    }
+//         if (placeMenuAtTop) {
+//             arg1 = [newActions arrayByAddingObjectsFromArray:arg1];
+//         } else {
+//             arg1 = [arg1 arrayByAddingObjectsFromArray:newActions];
+//         }
+//     }
 
-	id orig =  %orig;
-    [[Logger sharedInstance] logStringWithFormat:@"UIMenu result: %@", orig];
-    return orig;
-}
-
-// + (UIMenu *)menuWithTitle:(NSString *)title image:(UIImage *)image identifier:(UIMenuIdentifier)identifier options:(UIMenuOptions)options children:(NSArray<UIMenuElement *> *)children {
-
-//     [Logger logStringWithFormat:@"UIMenu: menuWithTitle: %@, identifier: %@, children: %@", title, identifier, children];
-//     return %orig;
+// 	id orig =  %orig;
+//     [[Logger sharedInstance] logStringWithFormat:@"UIMenu result: %@", orig];
+//     return orig;
 // }
 
-%end
+// // + (UIMenu *)menuWithTitle:(NSString *)title image:(UIImage *)image identifier:(UIMenuIdentifier)identifier options:(UIMenuOptions)options children:(NSArray<UIMenuElement *> *)children {
+
+// //     [Logger logStringWithFormat:@"UIMenu: menuWithTitle: %@, identifier: %@, children: %@", title, identifier, children];
+// //     return %orig;
+// // }
+
+// %end
 
 %hook ArtworkPrefetchingController
 

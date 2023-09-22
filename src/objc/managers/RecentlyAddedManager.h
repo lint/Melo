@@ -38,6 +38,6 @@
 - (NSString *)userDefaultsKey;
 - (void)saveData;
 - (void)loadData;
-
 - (void)updateFakeInsertionAlbums:(BOOL)shouldAdd;
+- (BOOL)shouldAllowDownloadedMusicContextMenu;
 @end

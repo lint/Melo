@@ -14,8 +14,10 @@
 
 // custom methods
 - (void)checkAlbumOrder;
-- (void)handleMoveToSectionAction:(NSInteger)sectionIndex;
-- (void)handleShiftAction:(BOOL)isMovingLeft;
+// - (void)handleMoveToSectionAction:(NSInteger)sectionIndex;
+- (void)handleActionMoveAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath toSection:(NSInteger)sectionIndex;
+// - (void)handleShiftAction:(BOOL)isMovingLeft;
+- (void)handleActionShiftAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath movingLeft:(BOOL)isMovingLeft;
 - (void)moveAlbumCellFromAdjustedIndexPath:(NSIndexPath *)arg1 toAdjustedIndexPath:(NSIndexPath *)arg2 dataUpdateBlock:(void (^)())arg3;
 - (void)toggleSectionCollapsedAtIndex:(NSInteger)arg1;
 - (void)handleDoubleTapOnAlbum:(UITapGestureRecognizer *)sender;
@@ -31,6 +33,7 @@
 - (void)handleAutoScrollTimerFired:(NSTimer *)timer;
 - (void)autoScrollAction:(BOOL)goingUp;
 - (void)triggerHapticFeedback;
+- (NSArray *)customContextActionsForAlbumAtIndexPath:(NSIndexPath *)indexPathForContextActions;
 
 - (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
     atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath;
