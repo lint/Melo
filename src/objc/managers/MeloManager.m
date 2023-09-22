@@ -101,7 +101,6 @@ static MeloManager *sharedMeloManager;
         @"collapsibleSectionsEnabled": @YES,
         @"showWiggleModeActionEnabled": @YES,
         @"preserveCollapsedStateEnabled": @YES,
-        @"wiggleModeHooksEnabled": @YES,
         @"themingHooksEnabled": @YES,
         @"pinningHooksEnabled": @YES,
         @"layoutHooksEnabled": @YES,

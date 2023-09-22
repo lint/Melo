@@ -1,10 +1,9 @@
 
 #import <UIKit/UIKit.h>
-#import <Preferences/PSListController.h>
+#import "MELOListController.h"
 
-@interface MELORootListController : PSListController
+@interface MELORootListController : MELOListController
 @property(strong, nonatomic) UIBarButtonItem *killMusicButton;
-@property(strong, nonatomic) UIColor *accentColor;
 - (void)clearPins;
 - (void)killMusic;
 @end

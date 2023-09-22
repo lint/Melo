@@ -814,7 +814,7 @@ extern "C" void InitWiggleMode() {
 
     MeloManager *meloManager = [MeloManager sharedInstance];
 
-    if ([meloManager prefsBoolForKey:@"wiggleModeHooksEnabled"]) {
+    if ([meloManager prefsBoolForKey:@"pinningHooksEnabled"]) {
         %init(WiggleModeGroup,
             LibraryRecentlyAddedViewController = objc_getClass("MusicApplication.LibraryRecentlyAddedViewController"),
             VerticalStackScrollView = objc_getClass("_TtCC16MusicApplication27VerticalStackViewController10ScrollView"),
