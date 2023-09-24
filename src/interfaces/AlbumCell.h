@@ -21,9 +21,13 @@
 - (void)layoutWiggleModeFakeAlbumViews;
 
 // Layout.xm
+@property(assign, nonatomic) BOOL shouldApplyCornerRadius;
+@property(assign, nonatomic) BOOL shouldHideText;
+@property(assign, nonatomic) BOOL shouldChangeFontSize;
 @property(strong, nonatomic) AlbumCellTextView *customTextView;
 - (void)setTextAndBadgeHidden:(BOOL)arg1;
 - (void)setCustomTextViewHidden:(BOOL)arg1;
 - (void)createCustomTextView;
+- (void)applyDisplayDict:(NSDictionary *)arg1;
 
 @end

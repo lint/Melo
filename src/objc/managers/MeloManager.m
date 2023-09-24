@@ -258,4 +258,29 @@ static MeloManager *sharedMeloManager;
     }
 }
 
+// returns a dictionary representing display settings for an album cell of a given datasource
+- (NSDictionary *)albumCellDisplayDictForDataSource:(id)dataSource {
+
+    BOOL hideAlbumTextEnabled = [self prefsBoolForKey:@"hideAlbumTextEnabled"];
+    BOOL customCornerRadiusEnabled = [self prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
+    BOOL changeFontSizeEnabled = [self prefsBoolForKey:@"customAlbumCellFontSizeEnabled"];
+    BOOL applyTextLayoutToOtherPagesEnabled = [self prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"];
+    BOOL applyMainLayoutToOtherPagesEnabled = [self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"];
+    BOOL dataSourceIsLRAVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")];
+    BOOL dataSourceIsOtherVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
+        [dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
+        [dataSource isKindOfClass:objc_getClass("MusicApplication.JSGridViewController")];
+
+    BOOL shouldApplyCornerRadius = customCornerRadiusEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyMainLayoutToOtherPagesEnabled));
+    BOOL shouldHideText = hideAlbumTextEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled));
+    BOOL shouldChangeFontSize = changeFontSizeEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled));
+
+    NSMutableDictionary *display = [NSMutableDictionary dictionary];
+    display[@"shouldApplyCornerRadius"] = @(shouldApplyCornerRadius);
+    display[@"shouldHideText"] = @(shouldHideText);
+    display[@"shouldChangeFontSize"] = @(shouldChangeFontSize);
+
+    return display;
+}
+
 @end

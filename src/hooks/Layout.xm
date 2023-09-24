@@ -10,6 +10,38 @@
 // customize the appearance of album cells in various collection views
 %hook AlbumCell
 %property(strong, nonatomic) AlbumCellTextView *customTextView;
+%property(assign, nonatomic) BOOL shouldApplyCornerRadius;
+%property(assign, nonatomic) BOOL shouldHideText;
+%property(assign, nonatomic) BOOL shouldChangeFontSize;
+
+// initialize the album cell
+- (id)init {
+
+    id orig = %orig;
+
+    [orig setShouldApplyCornerRadius:NO];
+    [orig setShouldHideText:NO];
+    [orig setShouldChangeFontSize:NO];
+
+    return self;
+}
+
+// set various settings which describe how the album cell will be displayed
+%new
+- (void)applyDisplayDict:(NSDictionary *)arg1 {
+    
+    if (arg1[@"shouldApplyCornerRadius"]) {
+        [self setShouldApplyCornerRadius:[arg1[@"shouldApplyCornerRadius"] boolValue]];
+    }
+
+    if (arg1[@"shouldHideText"]) {
+        [self setShouldHideText:[arg1[@"shouldHideText"] boolValue]];
+    }
+
+    if (arg1[@"shouldChangeFontSize"]) {
+        [self setShouldChangeFontSize:[arg1[@"shouldChangeFontSize"] boolValue]];
+    }
+}
 
 // lays out subviews
 - (void)layoutSubviews {
@@ -17,21 +49,9 @@
     %orig;
 
     MeloManager *meloManager = [MeloManager sharedInstance];
-    id dataSource = [[self _collectionView] dataSource];
-
-    // check various settings and data sources
-    BOOL hideAlbumTextEnabled = [meloManager prefsBoolForKey:@"hideAlbumTextEnabled"];
-    BOOL customCornerRadiusEnabled = [meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"];
-    BOOL changeFontSizeEnabled = [meloManager prefsBoolForKey:@"customAlbumCellFontSizeEnabled"];
-    BOOL applyTextLayoutToOtherPagesEnabled = [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"];
-    BOOL applyMainLayoutToOtherPagesEnabled = [meloManager prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"];
-    BOOL dataSourceIsLRAVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")];
-    BOOL dataSourceIsOtherVC = [dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
-        [dataSource isKindOfClass:objc_getClass("MusicApplication.AlbumsViewController")] || 
-        [dataSource isKindOfClass:objc_getClass("MusicApplication.JSGridViewController")];
 
     // set custom corner radius if applicable
-    if (customCornerRadiusEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyMainLayoutToOtherPagesEnabled))) {
+    if ([self shouldApplyCornerRadius]) {
 
         UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
         CGFloat radius = [[meloManager prefsObjectForKey:@"customAlbumCellCornerRadius"] floatValue] / 100 * [self frame].size.width;
@@ -42,12 +62,12 @@
     }
 
     // hide text if applicable
-    if (hideAlbumTextEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
+    if ([self shouldHideText]) {
         [self setTextAndBadgeHidden:YES];
         [self setCustomTextViewHidden:YES];
 
     // change font size if applicable
-    } else if (changeFontSizeEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
+    } else if ([self shouldChangeFontSize]) {
         [self setTextAndBadgeHidden:YES];
         [self setCustomTextViewHidden:NO];
         
@@ -83,7 +103,6 @@
 - (void)setCustomTextViewHidden:(BOOL)arg1 {
 
     AlbumCellTextView *customTextView = [self customTextView];
-
     if (customTextView) {
         [customTextView setHidden:arg1];
     }
@@ -119,6 +138,19 @@
 
 // view controller found by going to the page Full Library > Albums
 %hook AlbumsViewController
+%property(strong, nonatomic) NSDictionary *albumCellDisplayOptions;
+
+// called once to initialize the view controller
+- (id)init {
+
+    id orig = %orig;
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
+    return orig;
+}
 
 // called when the view has been loaded into memory
 - (void)viewDidLoad {
@@ -176,6 +208,19 @@
 
 // view controller found by going to the page Full Library > Artists > [arbitrary artist]
 %hook ArtistViewController
+%property(strong, nonatomic) NSDictionary *albumCellDisplayOptions;
+
+// called once to initialize the view controller
+- (id)init {
+
+    id orig = %orig;
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
+    return orig;
+}
 
 // called when the view has been loaded into memory
 - (void)viewDidLoad {
@@ -233,6 +278,19 @@
 
 // main recently added view controller - found by viewing the Full Library
 %hook LibraryRecentlyAddedViewController 
+%property(strong, nonatomic) NSDictionary *albumCellDisplayOptions;
+
+// called once to initialize the view controller
+- (id)init {
+
+    id orig = %orig;
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
+    return orig;
+}
 
 // called when the view has been loaded into memory
 - (void)viewDidLoad {
@@ -247,6 +305,8 @@
 
     MeloManager *meloManager = [MeloManager sharedInstance];
     AlbumCell *orig = (AlbumCell *)%orig;
+
+    [orig applyDisplayDict:[self albumCellDisplayOptions]];
 
     // hide album text and explicit badge if applicable
     if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"]) {
@@ -292,13 +352,20 @@
 // however, it's also used for song lists, music video pages, etc which need to be avoided (i.e. they'll crash) when applying the album cell layout
 %hook JSGridViewController
 %property(assign, nonatomic) BOOL shouldApplyCustomLayout;
+%property(strong, nonatomic) NSDictionary *albumCellDisplayOptions;
 
 // default initializer
 - (id)init {
 
-    // by default, assume that custom layout will not be applied
     id orig = %orig;
+
+    // by default, assume that custom layout will not be applied
     [orig setShouldApplyCustomLayout:NO];
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
     return orig;
 }
 
@@ -309,6 +376,8 @@
     id orig = %orig;
 
     if ([self shouldApplyCustomLayout] && [orig isKindOfClass:objc_getClass("MusicApplication.AlbumCell")]) {
+
+        [orig applyDisplayDict:[self albumCellDisplayOptions]];
 
         // hide album text and explicit badge if applicable
         if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && 

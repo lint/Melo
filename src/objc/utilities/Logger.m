@@ -42,7 +42,7 @@ static Logger *sharedLogger;
         if (enabledVal) {
             _enabled = [enabledVal boolValue];
         } else {
-            _enabled = YES;
+            _enabled = NO;
         }
 
         if (!_enabled) {
@@ -70,8 +70,6 @@ static Logger *sharedLogger;
         if (error) {
             _contents = @"";
         }
-
-        _shouldLogColorInfo = NO;
     }
 
     return self;
@@ -101,7 +99,11 @@ static Logger *sharedLogger;
 
 // intermediate method to directly take string format arguments
 - (void)logStringWithFormat:(NSString *)arg1, ... {
-    
+
+    if (!_enabled) {
+        return;
+    }
+
     va_list va;
     va_start(va, arg1);    
     NSString *formattedStr = [[NSString alloc] initWithFormat:arg1 arguments:va];
@@ -117,7 +119,6 @@ static Logger *sharedLogger;
 
 // intermediate method to directly take string format arguments
 + (void)logStringWithFormat:(NSString *)arg1, ... {
-
     
     va_list va;
     va_start(va, arg1);    
@@ -125,10 +126,6 @@ static Logger *sharedLogger;
     va_end(va);
 
     [[Logger sharedInstance] logString:formattedStr];
-}
-
-- (BOOL)test {
-    return _shouldLogColorInfo;
 }
 
 @end

@@ -6,3 +6,5 @@
 #import "AlbumCell.h"
 #import "extensions.h"
 #import "macros.h"
+#import "ArtistsViewController.h"
+#import "AlbumsViewController.h"

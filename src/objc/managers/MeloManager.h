@@ -33,6 +33,7 @@
 - (void)dataChangeOccurred:(RecentlyAddedManager *)sender;
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
 - (void)updateCollectionViewLayoutValues;
+- (NSDictionary *)albumCellDisplayDictForDataSource:(id)dataSource;
 
 - (void)handlePrefsChanged:(NSString *)arg1;
 @end

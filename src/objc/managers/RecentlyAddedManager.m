@@ -19,6 +19,8 @@
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         _skipLoad = NO;
 
+        _isReadyForUse = NO;
+
         _attemptedDataLoad = NO;
         _isDownloadedMusic = NO;
 
@@ -48,13 +50,14 @@
 }
 
 // determine if data is ready to be injected
-- (BOOL)isReadyForUse {
+- (void)updateIsReadyForUse {
 
     if (_isDownloadedMusic && !_prefsDownloadedMusicEnabled) {
-        return NO;
+        _isReadyForUse = NO;
+        return;
     }
 
-    return _processedRealAlbumOrder && _attemptedDataLoad;
+    _isReadyForUse = _processedRealAlbumOrder && _attemptedDataLoad;
 }
 
 // return an array of Album objects in their real order
@@ -206,6 +209,8 @@
     if (_attemptedDataLoad) {
         [self saveData];
     }
+
+    [self updateIsReadyForUse];
 }
 
 // return YES if an album at a given index path is able to be shifted left/right
@@ -583,6 +588,7 @@
     // this can be done by iterating thru prefs list, and adding the saved album to the list 
 
     _attemptedDataLoad = YES;
+    [self updateIsReadyForUse];
 
     [[Logger sharedInstance] logString:@"done data load"];
 }

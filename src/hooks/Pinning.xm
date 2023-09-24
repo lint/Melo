@@ -932,10 +932,9 @@
 - (void)reloadData {
     //%orig; //having it first seems to fix the didEndDisplayingCell crash bug, but then isReadyForUse is not YES in time for when the number of sections is checked
 
-    id dataSource = [self dataSource];
-
     %orig;
 
+    id dataSource = [self dataSource];
     if (dataSource && [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
         [dataSource checkAlbumOrder];
     }

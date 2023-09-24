@@ -13,6 +13,7 @@
 @property(assign, nonatomic) BOOL isDownloadedMusic;
 @property(assign, nonatomic) BOOL skipLoad;
 @property(assign, nonatomic) BOOL unhandledDataChangeOccurred;
+@property(assign, nonatomic) BOOL isReadyForUse;
 @property(assign, nonatomic) BOOL prefsDownloadedMusicEnabled;
 // @property(strong, nonatomic) NSLock 
 
@@ -20,7 +21,7 @@
 - (NSIndexPath *)translateIndexPath:(NSIndexPath *)arg1;
 - (NSArray *)recreateRealAlbumOrder;
 - (void)processRealAlbumOrder:(NSArray *)arg1;
-- (BOOL)isReadyForUse;
+- (void)updateIsReadyForUse;
 
 - (BOOL)canShiftAlbumAtAdjustedIndexPath:(NSIndexPath *)arg1 movingLeft:(BOOL)arg2;
 - (void)moveAlbumAtAdjustedIndexPath:(NSIndexPath *)sourceIndexPath toAdjustedIndexPath:(NSIndexPath *)destIndexPath;
