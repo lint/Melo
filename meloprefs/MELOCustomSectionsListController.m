@@ -26,7 +26,7 @@
 	if (!_specifiers) {
 
 		// load the static plist file
-		NSMutableArray *loadedSpecifiers = [NSMutableArray arrayWithArray:[self loadSpecifiersFromPlistName:@"CustomSections" target:self]];
+		NSMutableArray *loadedSpecifiers = [NSMutableArray arrayWithArray:[self loadSpecifiersFromPlistName:@"Page_CustomSections" target:self]];
 		
 		// load other saved preferences
 		NSURL *url = [NSURL fileURLWithPath:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];

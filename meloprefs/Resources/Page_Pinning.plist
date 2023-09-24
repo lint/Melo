@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Enabled</string>
+			<key>footerText</key>
+			<string>Restart the Music app to enable/disable hooks</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>pinningHooksEnabled</string>
+			<key>label</key>
+			<string>Pinning Hooks Enabled</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Album Limit</string>
+			<key>footerText</key>
+			<string>Unlocks the number of albums displayed in Recently Added. Warning: disabling will unpin albums that are no longer loaded.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>removeAlbumLimitEnabled</string>
+			<key>label</key>
+			<string>Remove Album Limit</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Custom Sections</string>
+			<key>footerText</key>
+			<string>Default sections are 'Pinned' and 'Recently Added'.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>customSectionsEnabled</string>
+			<key>label</key>
+			<string>Custom Sections Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>MELOCustomSectionsListController</string>
+			<key>label</key>
+			<string>Edit Custom Sections</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Collapsible</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>collapsibleSectionsEnabled</string>
+			<key>label</key>
+			<string>Collapsible Sections Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>preserveCollapsedStateEnabled</string>
+			<key>label</key>
+			<string>Preserve Collapsed State</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Downloaded Music</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>downloadedPinningEnabled</string>
+			<key>label</key>
+			<string>Downloaded Music Pinning Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>syncLibraryPinsEnabled</string>
+			<key>label</key>
+			<string>Sync Pins From Library</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Context Menu Actions</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>		
+		<dict>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>validTitles</key>
+			<array>
+				<string>Placed at Top</string>
+				<string>Placed at Bottom</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+			</array>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>default</key>
+			<integer>1</integer>
+			<key>key</key>
+			<string>contextActionsLocationValue</string>
+			<key>label</key>
+			<string>Context Location</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>allActionsInSubmenuEnabled</string>
+			<key>label</key>
+			<string>Actions Submenu</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>showMoveActionsEnabled</string>
+			<key>label</key>
+			<string>Show Move to Section Actions</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>showLeftRightActionsEnabled</string>
+			<key>label</key>
+			<string>Show Shift Left/Right Actions</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>showWiggleModeActionEnabled</string>
+			<key>label</key>
+			<string>Show Wiggle Mode Action</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Wiggle Mode</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>wiggleModeShakeAnimationsEnabled</string>
+			<key>label</key>
+			<string>Shake Animation Enabled</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Pinning</string>
+</dict>
+</plist>

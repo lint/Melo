@@ -1,42 +1,22 @@
-#import "MELORootListController.h"
+
+#import "MELOListController.h"
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSSliderTableCell.h>
 #import <Preferences/PSSwitchTableCell.h>
 #import <Preferences/PreferencesAppController.h>
 #import <rootless.h>
-#import <NSTask.h>
 
-@implementation MELORootListController
+// TODO: one day actually use this as a super class for other custom list controllers once you stop using allemand
+
+@implementation MELOListController
 
 - (instancetype)init {
-	self = [super init];
-
-	if (self) {
+	
+	if ((self = [super init])) {
 		_accentColor = [UIColor systemPinkColor]; //[UIColor colorWithRed:1.0 green:0.216 blue:0.373 alpha:1.0];
-
-		_killMusicButton = [[UIBarButtonItem alloc] initWithTitle:@"Kill Music" style: UIBarButtonItemStylePlain target:self action: @selector(killMusic)];
-		_killMusicButton.tintColor = _accentColor;
-
-		self.navigationItem.rightBarButtonItem = _killMusicButton;
 	}
 
 	return self;
-}
-
-- (NSArray *)specifiers {
-	if (!_specifiers) {
-		_specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
-
-		// set specifiers' icon images if they have one
-		for (PSSpecifier *specifier in _specifiers) {
-			if (specifier.properties[@"iconImageName"]) {
-				UIImage *icon = [[UIImage systemImageNamed:specifier.properties[@"iconImageName"]] imageWithTintColor:_accentColor];
-				[specifier setProperty:icon forKey:@"iconImage"];
-			}
-		}
-	}
-
-	return _specifiers;
 }
 
 - (id)readPreferenceValue:(PSSpecifier *)specifier {
@@ -78,18 +58,6 @@
 	return nil;
 }
 
-- (void)updateDependentSpecifiers {
-
-	for (PSSpecifier *specifier in _specifiers) {
-
-		PSSpecifier *parentSpecifier = [self specifierForKey:specifier.properties[@"parentKey"]];
-
-		if (parentSpecifier) {
-			
-		}
-	}
-}
-
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
@@ -100,6 +68,7 @@
 	[self.navigationController.navigationBar setPrefersLargeTitles:NO];
 	// _table.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
 }
+
 - (void)viewWillDisappear:(BOOL)animated {
 	// [[[UIApplication sharedApplication] delegate] appWindow].tintColor = nil;
 	[super viewWillDisappear:animated];
@@ -108,7 +77,7 @@
 - (UITableViewCell *)tableView:(UITableView *)arg1 cellForRowAtIndexPath:(NSIndexPath *)arg2 {
 	PSTableCell *cell = (PSTableCell *)[super tableView:arg1 cellForRowAtIndexPath:arg2];
 
-	if (cell.specifier.cellType == PSButtonCell /* || cell.specifier.cellType == PSLinkCell */ ) {
+	if (cell.specifier.cellType == PSButtonCell) {
 		cell.textLabel.textColor = _accentColor;
 		cell.textLabel.highlightedTextColor = _accentColor;
 	}
@@ -122,35 +91,16 @@
 	return cell;
 }
 
-- (void)killMusic {
+// - (void)updateDependentSpecifiers {
 
-	NSTask *t = [[NSTask alloc] init];
-    [t setLaunchPath:ROOT_PATH_NS(@"/usr/bin/killall")];
-    [t setArguments:[NSArray arrayWithObjects:@"-9", @"Music", nil]];
-    [t launch];
-}
+// 	for (PSSpecifier *specifier in _specifiers) {
 
-- (void)clearPins {
+// 		PSSpecifier *parentSpecifier = [self specifierForKey:specifier.properties[@"parentKey"]];
 
-	
-	// UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Warning" message:@"Your pins will be cleared when you restart the music app. Do you want to continue?" preferredStyle:UIAlertControllerStyleAlert];
-
-	// UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
-	// UIAlertAction *continueAction = [UIAlertAction actionWithTitle:@"Continue" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * action) {
-	
-		NSString *path = @"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist";
-		NSURL *url = [NSURL fileURLWithPath:path isDirectory:NO];
-		NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:path];
-		NSString *ident = [[NSProcessInfo processInfo] globallyUniqueString];
-
-		[settings setObject:ident forKey:@"MELO_CLEAR_PINS_KEY"];
-		[settings writeToURL:url error:nil];
-	
-	// }];
-
-	// [alert addAction:cancelAction];
-	// [alert addAction:continueAction];
-	// [self presentViewController:alert animated:YES completion:nil];
-}
+// 		if (parentSpecifier) {
+			
+// 		}
+// 	}
+// }
 
 @end

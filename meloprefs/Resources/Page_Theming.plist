@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Enabled</string>
+			<key>footerText</key>
+			<string>Restart the Music app to enable/disable hooks</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>key</key>
+			<string>themingHooksEnabled</string>
+			<key>label</key>
+			<string>Theming Hooks Enabled</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Tint</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customTintColorEnabled</string>
+			<key>label</key>
+			<string>Custom Tint Color Enabled</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOColorPickerCell</string>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/prefschanged</string>
+			<key>key</key>
+			<string>customTintColor</string>
+			<key>label</key>
+			<string>Custom Tint Color</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Theming</string>
+</dict>
+</plist>
