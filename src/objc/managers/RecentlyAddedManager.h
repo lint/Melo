@@ -19,7 +19,7 @@
 
 - (instancetype)init;
 - (NSIndexPath *)translateIndexPath:(NSIndexPath *)arg1;
-- (NSArray *)recreateRealAlbumOrder;
+- (NSArray *)albumIdentOriginalOrder;
 - (void)processRealAlbumOrder:(NSArray *)arg1;
 - (void)updateIsReadyForUse;
 

@@ -18,9 +18,7 @@
 // initialize with values from a dictionary
 - (instancetype)initWithDictionary:(NSDictionary *)arg1 {
 
-    self = [super init];
-
-    if (self) {
+    if ((self = [super init])) {
         _identifier = arg1[@"identifier"];
         _artist = arg1[@"artist"];
         _title = arg1[@"title"];

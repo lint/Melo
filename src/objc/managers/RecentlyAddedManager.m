@@ -46,6 +46,7 @@
 
     Section *section = _sections[arg1.section];
     Album *album = [section albumAtIndex:arg1.item];
+    // Album *album = _sections[arg1.section].albums[arg1.item];
     return [album realIndexPath];
 }
 
@@ -61,7 +62,7 @@
 }
 
 // return an array of Album objects in their real order
-- (NSArray *)recreateRealAlbumOrder {
+- (NSArray *)albumIdentOriginalOrder {
     [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager:%p - recreateAlbumOrder", self];
 
     NSInteger numberOfTotalAlbums = [self numberOfTotalAlbums];
@@ -84,7 +85,7 @@
 
             for (Album *album in section.albums) {
                 // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
-                realAlbumOrder[album.realIndex] = album;
+                realAlbumOrder[album.realIndex] = album.identifier;
             }
         }
     } else {
@@ -97,7 +98,7 @@
 
             for (Album *album in section.albums) {
                 // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
-                [realAlbumOrder addObject:album];
+                [realAlbumOrder addObject:album.identifier];
             }
         }
     }
@@ -109,25 +110,16 @@
 - (void)processRealAlbumOrder:(NSArray *)realAlbumOrder {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"RecentlyAddedManager: %p - processRealAlbumOrder:(%p)", self, realAlbumOrder]];
 
-    NSArray *recreatedAlbumOrder = [self recreateRealAlbumOrder];
+    // TODO: this needs to be improved!! would fix some lag
 
     // create arrays of just the ids of each of the albums
-    NSMutableArray *recreatedAlbumIdentOrder = [NSMutableArray array];
+    NSArray *recreatedAlbumIdentOrder = [self albumIdentOriginalOrder];
     NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
-
-    // [[Logger sharedInstance] logString:@"here pre array compare"];
-    
-    for (Album *album in recreatedAlbumOrder) {
-        // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"orig order album: %@", album]];
-        [recreatedAlbumIdentOrder addObject:album.identifier];
-    }
 
     for (Album *album in realAlbumOrder) {
         // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"new order album: %@", album]];
         [realAlbumIdentOrder addObject:album.identifier];
     }
-
-    // [[Logger sharedInstance] logString:@"here post array compare"];
 
     // process the new order if it has changed
     if (![realAlbumIdentOrder isEqualToArray:recreatedAlbumIdentOrder]) {
@@ -135,6 +127,7 @@
 
         [[Logger sharedInstance] logString:@"order changed, will process"];
 
+        // TODO: better way of doing this here? perhaps by using differenceFromArray?
         // remove any album that is not in the real order
         for (NSString *albumID in recreatedAlbumIdentOrder) {
 
@@ -151,6 +144,8 @@
 
         NSArray *pinnedAlbums = [self pinnedAlbums];
         int count = 0;
+
+        // TODO: these double for loops probably aren't great
 
         for (Album *album in realAlbumOrder) {
 
@@ -178,29 +173,6 @@
                 [recentSection addAlbum:album];
             }
         }
-
-        // check every album in the new album order
-        // for (Album *album in realAlbumOrder) {
-            
-        //     // add any new albums to the recently added section
-        //     if (![recreatedAlbumIdentOrder containsObject:album.identifier]) {
-        //         [[Logger sharedInstance] logString:[NSString stringWithFormat:@"add new album to recent section: %@", [album identifier]]];
-
-                
-        //         // [_sections[0] addAlbum:album];
-        //         // if (count++ == 0 || count == 6) {
-        //         //     [_sections[0] addAlbum:album];
-        //         // } else {
-        //             [recentSection addAlbum:album];
-        //         // }
-        //     }
-
-        //     // update any existing album information that might have changed
-        //     Album *originalAlbum = [self albumWithIdentifier:album.identifier];
-        //     originalAlbum.artist = album.artist;
-        //     originalAlbum.title = album.title;
-        //     originalAlbum.realIndex = album.realIndex;
-        // }
     }
 
     _processedRealAlbumOrder = YES;

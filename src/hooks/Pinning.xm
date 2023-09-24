@@ -333,7 +333,7 @@
 /* methods that deal with displaying sections */
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)arg1 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - numberOfSectionsInCollectionView:(%p)", self, arg1]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - numberOfSectionsInCollectionView:(%p)", self, arg1]];
 
     // get the recently added manager
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
@@ -347,7 +347,7 @@
 }
 
 - (NSInteger)collectionView:(UICollectionView *)arg1 numberOfItemsInSection:(NSInteger)arg2 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) numberOfItemsInSection:(%li)", self, arg1, arg2]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) numberOfItemsInSection:(%li)", self, arg1, arg2]];
 
     // get the recently added manager
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
@@ -427,11 +427,11 @@
         orig = %orig;
     } else {
         Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:arg2];
-        NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
+        // NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
         // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
 
         // use the injected data
-        orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
+        orig = %orig(arg1, [album realIndexPath]);
         [orig setIdentifier:album.identifier];
         
         if ([album isFakeAlbum]) {
@@ -609,12 +609,11 @@
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) shouldHighlightItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
     
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    WiggleModeManager *wiggleManager = [self wiggleModeManager];
     
     // check if recently added manager is ready to inject data
     if (![recentlyAddedManager isReadyForUse]) {
         return %orig;
-    } else if (wiggleManager.inWiggleMode) {
+    } else if ([self wiggleModeManager].inWiggleMode) {
         
         // do not allow selection of albums while in wiggle mode
         return NO;
@@ -652,16 +651,20 @@
 
             if ([item album]) {
                 MPModelAlbum *album = [item album];
-                info = @{@"identifier" : identifier, 
+                info = @{
+                    @"identifier" : identifier, 
                     @"artist" : [[album artist] name] ?: @"TEMP_ARTIST_NAME", 
                     @"title" : [album title] ?: @"TEMP_ALBUM_TITLE",
-                    @"realIndex": @(realIndex++)};
+                    @"realIndex": @(realIndex++)
+                };
             } else if ([item playlist]) {
                 MPModelPlaylist *playlist = [item playlist];
-                info = @{@"identifier" : identifier, 
+                info = @{
+                    @"identifier" : identifier, 
                     @"artist" : [[playlist curator] name] ?: @"TEMP_ARTIST_NAME",
                     @"title" : [playlist name] ?: @"TEMP_PLAYLIST_NAME",
-                    @"realIndex": @(realIndex++)};
+                    @"realIndex": @(realIndex++)
+                };
             } else {
                 [[Logger sharedInstance] logString:@"could not get either album or playlist from library response"];
             }
