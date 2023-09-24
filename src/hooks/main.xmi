@@ -10,11 +10,29 @@
 #import "Pinning.xm"
 #import "Theming.xm"
 
+// callback method for when a change in pinning preferences was detected
+static void pinningPrefsChangedCallback() {
+    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/pinning.updated"];
+}
+
+// callback method for when a change in layout preferences was detected
+static void layoutPrefsChangedCallback() {
+    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/layout.updated"];
+}
+
+// callback method for when a change in theming preferences was detected
+static void themingPrefsChangedCallback() {
+    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/theming.updated"];
+}
+
+static void *observer;
+
 // main constructor for melo
 %ctor {
     
     MeloManager *meloManager = [MeloManager sharedInstance];
 
+    // initialize melo
     if ([meloManager prefsBoolForKey:@"enabled"]) {
         [Logger logString:@"start initing hooks"];
 
@@ -23,4 +41,21 @@
         InitPinning();
         InitTheming();
     }
+
+    // add observers for preference changes
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, (CFNotificationCallback)pinningPrefsChangedCallback,
+        CFSTR("com.lint.melo.prefs/pinning.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, (CFNotificationCallback)layoutPrefsChangedCallback,
+        CFSTR("com.lint.melo.prefs/layout.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, (CFNotificationCallback)themingPrefsChangedCallback,
+        CFSTR("com.lint.melo.prefs/theming.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+}
+
+// main deconstructor for melo
+%dtor {
+    
+    // remove preference changes observers
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/pinning.updated"), NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/layout.updated"), NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/theming.updated"), NULL);
 }

@@ -129,7 +129,7 @@
 	// settings[@"customSectionsInfo"] = [self serializeValidCustomSections];
 	[settings writeToURL:url error:nil];
 
-	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("com.lint.melo.prefs/prefschanged"), NULL, NULL, YES);
+	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("com.lint.melo.prefs/pinning.updated"), NULL, NULL, YES);
 }
 
 // called when the main view is about to be presented on screen

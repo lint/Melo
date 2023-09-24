@@ -197,6 +197,7 @@
 - (id)init {
 
     [Logger logStringWithFormat:@"LRAVC: %p - init", self];
+    
 
     RecentlyAddedManager *recentlyAddedManager = [RecentlyAddedManager new];
     WiggleModeManager *wiggleManager = [WiggleModeManager new];   
@@ -205,8 +206,12 @@
     [self setRecentlyAddedManager:recentlyAddedManager];
     [self setWiggleModeManager:wiggleManager];
     [self setAnimationManager:animationManager];
-    
+
     id orig = %orig;
+
+    // add an observer for whenever a pinning preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePinningPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_PINNING" object:nil];
+    
     [Logger logStringWithFormat:@"orig: %p, class: %@", orig, [orig class]];
     return orig;
 }
@@ -312,6 +317,17 @@
     }
 
     [[self recentlyAddedManager] loadData];
+}
+
+// update the view when pinning preferences were changed
+%new
+- (void)handlePinningPrefsUpdate:(NSNotification *)arg1 {
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+
+    [recentlyAddedManager loadData];
+    [collectionView reloadData];
 }
 
 /* methods that deal with displaying sections */

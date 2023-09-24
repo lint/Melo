@@ -18,6 +18,7 @@
 - (void)toggleSectionCollapsedAtIndex:(NSInteger)arg1;
 - (void)handleDoubleTapOnAlbum:(UITapGestureRecognizer *)sender;
 - (NSArray *)customContextActionsForAlbumAtIndexPath:(NSIndexPath *)indexPathForContextActions;
+- (void)handlePinningPrefsUpdate:(NSNotification *)arg1;
 
 - (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
     atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath;
@@ -34,5 +35,8 @@
 - (void)handleAutoScrollTimerFired:(NSTimer *)timer;
 - (void)autoScrollAction:(BOOL)goingUp;
 - (void)triggerHapticFeedback;
+
+// Layout.xm
+- (void)handleLayoutPrefsUpdate:(NSNotification *)arg1;
 
 @end

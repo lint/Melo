@@ -23,6 +23,7 @@
 + (void)load;
 + (instancetype)sharedInstance;
 - (instancetype)init;
+- (void)finishInitialization:(NSNotification *)arg1;
 
 - (void)loadPrefs;
 - (BOOL)prefsBoolForKey:(NSString *)arg1;
@@ -33,4 +34,5 @@
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
 - (void)updateCollectionViewLayoutValues;
 
+- (void)handlePrefsChanged:(NSString *)arg1;
 @end

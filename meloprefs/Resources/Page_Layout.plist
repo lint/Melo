@@ -10,7 +10,7 @@
 			<key>label</key>
 			<string>Enabled</string>
 			<key>footerText</key>
-			<string>Restart the Music app to enable/disable hooks</string>
+			<string>Restart the Music app to enable/disable hooks. Other settings are applied automatically.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -40,6 +40,8 @@
 			<true/>
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customNumColumnsEnabled</string>
 			<key>label</key>
@@ -61,7 +63,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customNumColumns</string>
 			<key>label</key>
@@ -84,7 +86,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellSpacingEnabled</string>
 			<key>label</key>
@@ -106,7 +108,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellSpacing</string>
 			<key>label</key>
@@ -128,6 +130,8 @@
 			<false/>
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellCornerRadiusEnabled</string>
 			<key>label</key>
@@ -149,7 +153,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellCornerRadius</string>
 			<key>label</key>
@@ -168,9 +172,11 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<true/>
+			<false/>
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>hideAlbumTextEnabled</string>
 			<key>label</key>
@@ -193,7 +199,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellFontSizeEnabled</string>
 			<key>label</key>
@@ -215,7 +221,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>customAlbumCellFontSize</string>
 			<key>label</key>
@@ -238,7 +244,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>mainLayoutAffectsOtherAlbumPagesEnabled</string>
 			<key>label</key>
@@ -252,7 +258,7 @@
 			<key>defaults</key>
 			<string>com.lint.melo.prefs</string>
 			<key>PostNotification</key>
-			<string>com.lint.melo.prefs/prefschanged</string>
+			<string>com.lint.melo.prefs/layout.updated</string>
 			<key>key</key>
 			<string>textLayoutAffectsOtherAlbumPagesEnabled</string>
 			<key>label</key>

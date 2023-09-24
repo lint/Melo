@@ -55,10 +55,19 @@ static MeloManager *sharedMeloManager;
         _albumCellTextSpacing = 5;
         
         [self checkClearPins];
-        // [self updateCollectionViewLayoutValues]; // can't call here since [UIScreen mainScreen].bounds crashes the app
+
+        // add an observer for when the application finished launching to perform UI calculations
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(finishInitialization:) name:UIApplicationDidFinishLaunchingNotification object:nil];
     }
 
     return self;
+}
+
+// callback for when the app has launched and UI components can be used
+- (void)finishInitialization:(NSNotification *)arg1 {
+
+    [self updateCollectionViewLayoutValues];
+    _defaultPrefs[@"customTintColor"] =  [MeloUtils colorToDict:[UIColor systemPinkColor]];
 }
 
 // returns a boolean stored in preferences with the given key
@@ -77,13 +86,13 @@ static MeloManager *sharedMeloManager;
 
     [[Logger sharedInstance] logStringWithFormat:@"MeloManager - loadPrefs, prefs result: %@", _prefs];
 
-    NSDictionary *defaultPrefs = @{
+    _defaultPrefs =  [NSMutableDictionary dictionaryWithDictionary:@{
         @"enabled": @YES,
         @"customNumColumnsEnabled": @YES,
         @"customNumColumns": @4,
         @"customAlbumCellCornerRadiusEnabled": @NO,
         @"customAlbumCellCornerRadius": @0,
-        @"hideAlbumTextEnabled": @YES,
+        @"hideAlbumTextEnabled": @NO,
         @"removeAlbumLimitEnabled": @YES,
         @"customActionMenuEnabled":@YES,
         @"loggingEnabled": @NO,
@@ -109,11 +118,35 @@ static MeloManager *sharedMeloManager;
         @"customAlbumCellFontSizeEnabled": @NO,
         @"customAlbumCellFontSize": @12,
         @"wiggleModeShakeAnimationsEnabled": @YES
-        // @"customTintColor": [self colorToDict:[UIColor systemPinkColor]]
-        };
-    _defaultPrefs = [NSMutableDictionary dictionaryWithDictionary:defaultPrefs];
-    // [_defaultPrefs setObject:[self colorToDict:[UIColor systemPinkColor]] forKey:@"customTintColor"];
+    }];
 }
+
+// update prefs when a change from settings was detected
+- (void)handlePrefsChanged:(NSString *)arg1 {
+    [Logger logString:@"MeloManager - prefs change detected!!"];
+    
+    _prefs = [[NSDictionary alloc] initWithContentsOfFile:@"/var/jb/var/mobile/Library/Preferences/com.lint.melo.prefs.plist"];
+    NSString *notifName = @"MELO_NOTIFICATION_PREFS_UPDATED";
+
+    // pinning preferences were updated
+    if ([arg1 isEqualToString:@"com.lint.melo.prefs/pinning.updated"]) {
+        notifName = [notifName stringByAppendingString:@"_PINNING"];
+
+    // layout preferences were updated
+    } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/layout.updated"]) {
+        notifName = [notifName stringByAppendingString:@"_LAYOUT"];
+
+        [self updateCollectionViewLayoutValues];
+
+    // theming preferences were updated
+    } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/theming.updated"]) {
+        notifName = [notifName stringByAppendingString:@"_THEMING"];
+
+    }
+
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:notifName object:nil]];
+}
+
 
 // updates the values for all properties related to collection view sizing and spacing
 - (void)updateCollectionViewLayoutValues {

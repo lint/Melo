@@ -44,10 +44,12 @@
     // hide text if applicable
     if (hideAlbumTextEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
         [self setTextAndBadgeHidden:YES];
+        [self setCustomTextViewHidden:YES];
 
     // change font size if applicable
     } else if (changeFontSizeEnabled && (dataSourceIsLRAVC || (dataSourceIsOtherVC && applyTextLayoutToOtherPagesEnabled))) {
         [self setTextAndBadgeHidden:YES];
+        [self setCustomTextViewHidden:NO];
         
         AlbumCellTextView *customTextView = [self customTextView];
         UIView *textStackView = MSHookIvar<UIView *>(self, "textStackView");
@@ -55,7 +57,10 @@
         if (customTextView && textStackView) {
             customTextView.frame = textStackView.frame;
         }
-    }    
+    } else {
+        [self setTextAndBadgeHidden:NO];
+        [self setCustomTextViewHidden:YES];
+    }
 }
 
 // attempts to either show / hide the album text and explicit badge
@@ -115,9 +120,12 @@
 // view controller found by going to the page Full Library > Albums
 %hook AlbumsViewController
 
-// called after the view has been loaded into memory
+// called when the view has been loaded into memory
 - (void)viewDidLoad {
     %orig;
+
+    // add an observer for whenever a layout preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLayoutPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LAYOUT" object:nil];
 }
 
 // return the album cell for a given index path
@@ -154,6 +162,13 @@
 %new
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
     return [[MeloManager sharedInstance] otherPagesCollectionViewItemSize];
+}
+
+// update the view when layout preferences were changed
+%new
+- (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    [collectionView reloadData];
 }
 
 %end
@@ -162,6 +177,14 @@
 // view controller found by going to the page Full Library > Artists > [arbitrary artist]
 %hook ArtistViewController
 
+// called when the view has been loaded into memory
+- (void)viewDidLoad {
+    %orig;
+
+    // add an observer for whenever a layout preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLayoutPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LAYOUT" object:nil];
+}
+
 // return the album cell for a given index path
 - (UICollectionViewCell *)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
 
@@ -198,11 +221,26 @@
     return [[MeloManager sharedInstance] otherPagesCollectionViewItemSize];
 }
 
+// update the view when layout preferences were changed
+%new
+- (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    [collectionView reloadData];
+}
+
 %end
 
 
 // main recently added view controller - found by viewing the Full Library
 %hook LibraryRecentlyAddedViewController 
+
+// called when the view has been loaded into memory
+- (void)viewDidLoad {
+    %orig;
+
+    // add an observer for whenever a layout preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLayoutPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LAYOUT" object:nil];
+}
 
 // return the album cell for a given index path
 - (UICollectionViewCell *)collectionView:(UICollectionView *)arg1 cellForItemAtIndexPath:(NSIndexPath *)arg2 {
@@ -238,6 +276,13 @@
 %new
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
     return [[MeloManager sharedInstance] collectionViewItemSize];
+}
+
+// update the view when layout preferences were changed
+%new
+- (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    [collectionView reloadData];
 }
 
 %end
@@ -345,6 +390,18 @@
     // if album or playlist is not nil, the grid view is displaying album cells and the layout can be applied
     BOOL isAlbumOrPlaylist = [contentItem album] || [contentItem playlist];
     [self setShouldApplyCustomLayout:isAlbumOrPlaylist];
+
+    // observe layout changes if custom layout is applied
+    if (isAlbumOrPlaylist) {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLayoutPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LAYOUT" object:nil];
+    }
+}
+
+// update the view when layout preferences were changed
+%new
+- (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    [collectionView reloadData];
 }
 
 %end
@@ -367,19 +424,6 @@
 
 %end
 
-
-// the music app's UIApplicationDelegate
-%hook ApplicationDelegate
-
-// [UIScreen mainScreen].bounds cannot be called in the %ctor, so MeloManager's setup is finished here
-- (BOOL)application:(UIApplication *)arg1 didFinishLaunchingWithOptions:(NSDictionary *)arg2 {
-    
-    [[MeloManager sharedInstance] updateCollectionViewLayoutValues];
-
-    return %orig;
-}
-
-%end
 
 // helper debug method to make things easier in flexing
 // %hook TextStackView
@@ -406,8 +450,7 @@ extern "C" void InitLayout() {
             AlbumsViewController = objc_getClass("MusicApplication.AlbumsViewController"),
             ArtistViewController = objc_getClass("MusicApplication.ArtistViewController"),
             LibraryRecentlyAddedViewController = objc_getClass("MusicApplication.LibraryRecentlyAddedViewController"),
-            JSGridViewController = objc_getClass("MusicApplication.JSGridViewController"),
-            ApplicationDelegate = objc_getClass("MusicApplication.ApplicationDelegate")
+            JSGridViewController = objc_getClass("MusicApplication.JSGridViewController")
         );
     }
 }
