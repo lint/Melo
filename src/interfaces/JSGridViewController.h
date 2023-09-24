@@ -3,7 +3,7 @@
 
 @interface JSGridViewController : UIViewController
 
-// custom elements
+// Layout.xm
 @property(assign, nonatomic) BOOL shouldApplyCustomLayout;
 - (void)checkShouldApplyCustomLayout;
 

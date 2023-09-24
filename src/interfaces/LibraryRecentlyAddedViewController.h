@@ -6,19 +6,23 @@
 
 @interface LibraryRecentlyAddedViewController : UIViewController
 
-// custom properties
+// Pinning.xm
 @property(strong, nonatomic) WiggleModeManager *wiggleModeManager;
 @property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 @property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
 @property(strong, nonatomic) AnimationManager *animationManager;
-
-// custom methods
 - (void)checkAlbumOrder;
 - (void)handleActionMoveAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath toSection:(NSInteger)sectionIndex;
 - (void)handleActionShiftAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath movingLeft:(BOOL)isMovingLeft;
 - (void)moveAlbumCellFromAdjustedIndexPath:(NSIndexPath *)arg1 toAdjustedIndexPath:(NSIndexPath *)arg2 dataUpdateBlock:(void (^)())arg3;
 - (void)toggleSectionCollapsedAtIndex:(NSInteger)arg1;
 - (void)handleDoubleTapOnAlbum:(UITapGestureRecognizer *)sender;
+- (NSArray *)customContextActionsForAlbumAtIndexPath:(NSIndexPath *)indexPathForContextActions;
+
+- (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
+    atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath;
+
+// WiggleMode.xm
 - (void)endWiggleMode;
 - (void)toggleWiggleMode;
 - (void)createEndWiggleModeButtonItems;
@@ -30,9 +34,5 @@
 - (void)handleAutoScrollTimerFired:(NSTimer *)timer;
 - (void)autoScrollAction:(BOOL)goingUp;
 - (void)triggerHapticFeedback;
-- (NSArray *)customContextActionsForAlbumAtIndexPath:(NSIndexPath *)indexPathForContextActions;
-
-- (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
-    atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath;
 
 @end
