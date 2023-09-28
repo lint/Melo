@@ -7,3 +7,4 @@ extern "C" void InitLayout();
 extern "C" void InitWiggleMode();
 extern "C" void InitRecentlyAdded();
 extern "C" void InitTheming();
+extern "C" void InitBackport();

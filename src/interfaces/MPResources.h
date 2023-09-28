@@ -77,3 +77,7 @@
 - (void)setLeadingAdjustment:(NSInteger)arg1;
 - (void)setWantsMonospaceNumbers:(BOOL)arg1;
 @end
+
+@interface MPVolumeSlider : UISlider
+@property(strong, nonatomic) UIView *thumbView;
+@end

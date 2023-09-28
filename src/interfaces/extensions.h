@@ -19,3 +19,16 @@
 - (UIContextMenuActionProvider)actionProvider;
 - (void)setActionProvider:(UIContextMenuActionProvider)arg1;
 @end
+
+@interface UIColor ()
++ (id)whiteColorWithAlpha:(CGFloat)arg1;
+@end
+
+@interface UISlider ()
+- (id)_maxTrackView;
+- (id)_minTrackView;
+- (id)_thumbView;
+- (id)_thumbViewNeue;
+- (id)_maxValueView;
+- (id)_minValueView;
+@end

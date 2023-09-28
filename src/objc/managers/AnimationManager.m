@@ -138,9 +138,30 @@
             [UIView commitAnimations];
         }
 
+    // completeion code for setting time text on the music player when a music scrub has ended
+    } else if ([@"MELO_ANIMATION_MUSIC_PLAYER_SCRUB_STOPPED" isEqualToString:animationID]) {
+        
+        UILabel *elapsedTimeLabel = ctx[@"elapsedTimeLabel"];
+        UILabel *remainingTimeLabel = ctx[@"remainingTimeLabel"];
+
+        elapsedTimeLabel.textColor = [UIColor whiteColorWithAlpha:0.18];
+        remainingTimeLabel.textColor = [UIColor whiteColorWithAlpha:0.18];
+
+        elapsedTimeLabel.alpha = 1;
+        remainingTimeLabel.alpha = 1;
+    
+    // completeion code for growing / shrinking the volume slider on scrub start / end
+    } else if ([@"MELO_ANIMATION_VOLUME_SLIDER_TOUCH" isEqualToString:animationID]) {
+        
+        VolumeSlider *volumeSlider = ctx[@"volumeSlider"];
+        BOOL shouldApplyLargeOriginalSliderWidth = [ctx[@"shouldApplyLargeOriginalSliderWidth"] boolValue];
+
+        [volumeSlider setShouldApplyLargeSliderWidth:shouldApplyLargeOriginalSliderWidth];
+
     } else {
         [Logger logString:@"AnimationManager handleAnimationDidStop could not match animationID"];
     }
+    
 }
 
 @end

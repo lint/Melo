@@ -85,6 +85,24 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Backport Settings</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>MELOBackportListController</string>
+			<key>label</key>
+			<string>Backport</string>
+			<key>iconImageName</key>
+			<string>arrow.backward.to.line.circle.fill</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>Reset</string>
 			<key>footerText</key>
 			<string></string>

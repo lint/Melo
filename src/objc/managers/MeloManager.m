@@ -117,7 +117,9 @@ static MeloManager *sharedMeloManager;
         @"textLayoutAffectsOtherAlbumPagesEnabled": @NO,
         @"customAlbumCellFontSizeEnabled": @NO,
         @"customAlbumCellFontSize": @12,
-        @"wiggleModeShakeAnimationsEnabled": @YES
+        @"wiggleModeShakeAnimationsEnabled": @YES,
+        @"backportHooksEnabled": @YES,
+        @"newMusicPlayerEnabled": @NO
     }];
 }
 
@@ -141,6 +143,10 @@ static MeloManager *sharedMeloManager;
     // theming preferences were updated
     } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/theming.updated"]) {
         notifName = [notifName stringByAppendingString:@"_THEMING"];
+
+    // backport preferences were updated
+    } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/backport.updated"]) {
+        notifName = [notifName stringByAppendingString:@"_BACKPORT"];
 
     }
 

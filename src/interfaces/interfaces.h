@@ -8,3 +8,6 @@
 #import "macros.h"
 #import "ArtistsViewController.h"
 #import "AlbumsViewController.h"
+#import "MusicNowPlayingControlsViewController.h"
+#import "PlayerTimeControl.h"
+#import "VolumeSlider.h"

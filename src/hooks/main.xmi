@@ -9,6 +9,7 @@
 #import "WiggleMode.xm"
 #import "Pinning.xm"
 #import "Theming.xm"
+#import "Backport.xm"
 
 // callback method for when a change in pinning preferences was detected
 static void pinningPrefsChangedCallback() {
@@ -25,6 +26,12 @@ static void themingPrefsChangedCallback() {
     [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/theming.updated"];
 }
 
+// callback method for when a change in backport preferences was detected
+static void backportPrefsChangedCallback() {
+    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/backport.updated"];
+}
+
+
 static void *observer;
 
 // main constructor for melo
@@ -40,6 +47,7 @@ static void *observer;
         InitWiggleMode();
         InitPinning();
         InitTheming();
+        InitBackport();
     }
 
     // add observers for preference changes
@@ -49,6 +57,8 @@ static void *observer;
         CFSTR("com.lint.melo.prefs/layout.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, (CFNotificationCallback)themingPrefsChangedCallback,
         CFSTR("com.lint.melo.prefs/theming.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, (CFNotificationCallback)backportPrefsChangedCallback,
+        CFSTR("com.lint.melo.prefs/backport.updated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 }
 
 // main deconstructor for melo
@@ -58,4 +68,5 @@ static void *observer;
     CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/pinning.updated"), NULL);
     CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/layout.updated"), NULL);
     CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/theming.updated"), NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), observer, CFSTR("com.lint.melo.prefs/backport.updated"), NULL);
 }
