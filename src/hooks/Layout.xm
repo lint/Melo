@@ -15,7 +15,7 @@
 %property(assign, nonatomic) BOOL shouldChangeFontSize;
 
 // initialize the album cell
-- (id)init {
+- (id)initWithFrame:(CGRect)arg1 {
 
     id orig = %orig;
 
@@ -166,6 +166,8 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
     AlbumCell *orig = (AlbumCell *)%orig;
 
+    [orig applyDisplayDict:[self albumCellDisplayOptions]];
+
     // hide album text and explicit badge if applicable
     if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
         [orig setTextAndBadgeHidden:YES];
@@ -199,6 +201,11 @@
 // update the view when layout preferences were changed
 %new
 - (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
     [collectionView reloadData];
 }
@@ -236,6 +243,8 @@
     MeloManager *meloManager = [MeloManager sharedInstance];
     AlbumCell *orig = (AlbumCell *)%orig;
 
+    [orig applyDisplayDict:[self albumCellDisplayOptions]];
+
     // hide album text and explicit badge if applicable
     if ([meloManager prefsBoolForKey:@"hideAlbumTextEnabled"] && [meloManager prefsBoolForKey:@"textLayoutAffectsOtherAlbumPagesEnabled"]) {
         [orig setTextAndBadgeHidden:YES];
@@ -269,6 +278,11 @@
 // update the view when layout preferences were changed
 %new
 - (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
     [collectionView reloadData];
 }
@@ -341,6 +355,11 @@
 // update the view when layout preferences were changed
 %new
 - (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+    
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
     [collectionView reloadData];
 }
@@ -469,6 +488,11 @@
 // update the view when layout preferences were changed
 %new
 - (void)handleLayoutPrefsUpdate:(NSNotification *)arg1 {
+
+    // get options for how the album cell should be displayed
+    NSDictionary *albumCellDisplayOptions = [[MeloManager sharedInstance] albumCellDisplayDictForDataSource:self];
+    [self setAlbumCellDisplayOptions:albumCellDisplayOptions];
+
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
     [collectionView reloadData];
 }
