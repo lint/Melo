@@ -724,6 +724,165 @@
 
 %end
 
+// playlist controller in Library > Playlists
+%hook PlaylistsViewController
+%property(assign, nonatomic) BOOL shouldApplyCustomValues;
+
+// default initializer
+- (id)init {
+    id orig = %orig;
+
+    [orig setShouldApplyCustomValues:NO];
+
+    return orig;
+}
+
+// called when the view was loaded into memory
+- (void)viewDidLoad {
+
+    %orig;
+
+    // check if setting is enabled and custom values should be applied
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    [self setShouldApplyCustomValues:[meloManager prefsBoolForKey:@"smallerPlaylistsViewCellsEnabled"]];
+
+    // add an observer for whenever a backport preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleBackportPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_BACKPORT" object:nil];
+}
+
+// get the height of rows in the collection view
+- (CGFloat)collectionView:(UICollectionView *)arg1 tableLayout:(id)arg2 heightForRowAtIndexPath:(NSIndexPath *)arg3 {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    
+    if ([self shouldApplyCustomValues]) {
+
+        // check if custom height is enabled
+        if ([meloManager prefsBoolForKey:@"customPlaylistCellHeightEnabled"]) {
+            return [[meloManager prefsObjectForKey:@"customPlaylistCellHeight"] floatValue];
+        } else {
+            return 80; // ios 16 cell height
+        }
+    } else {
+        return %orig;
+    }
+}
+
+// get the cell for a given index path
+- (id)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+
+    id orig = %orig;
+
+    BOOL shouldApplyCustomValues = [self shouldApplyCustomValues];
+
+    if ([self shouldApplyCustomValues]) {
+        
+        // check if the cell is the right class
+        if ([orig isKindOfClass:objc_getClass("MusicApplication.PlaylistCell")] || [orig isKindOfClass:objc_getClass("MusicApplication.AddNewPlaylistCell")]) {
+            [orig setShouldApplyCustomValues:YES];
+        }
+    }
+
+    return orig;
+}
+
+// update the view when backport preferences were changed
+%new
+- (void)handleBackportPrefsUpdate:(NSNotification *)arg1 {
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    UICollectionView *collectionView = [self findCollectionView];
+
+    [self setShouldApplyCustomValues:[meloManager prefsBoolForKey:@"smallerPlaylistsViewCellsEnabled"]];
+
+    // update the view
+    if (collectionView) {
+        [collectionView reloadData];
+    }
+}
+
+// searches the view's subviews for a collection view 
+%new
+- (UICollectionView *)findCollectionView {
+
+    UIView *view = [self view];
+
+    if ([view isKindOfClass:[UICollectionView class]]) {
+        return view;
+    }
+
+    for (UIView *subview in [view subviews]) {
+        if ([subview isKindOfClass:[UICollectionView class]]) {
+            return subview;
+        }
+    }
+
+    return nil;
+}
+
+%end
+
+// cell within the PlaylistsViewController
+%hook PlaylistCell
+%property(assign, nonatomic) BOOL shouldApplyCustomValues;
+
+// default initializer
+- (id)initWithFrame:(CGRect)arg1 {
+    id orig = %orig;
+
+    [self setShouldApplyCustomValues:NO];
+
+    return orig;
+}
+
+// lays out this views subviews
+- (void)layoutSubviews {
+
+    if ([self shouldApplyCustomValues]) {
+        
+        // change the size of the artwork to fit within the new cell size
+        id artworkComponent = MSHookIvar<id>(self, "artworkComponent");
+        CGFloat imageSideLength = MAX([self bounds].size.height - 14, 0);
+
+        MSHookIvar<CGSize>(artworkComponent, "idealImageSize") = CGSizeMake(imageSideLength, imageSideLength);
+    }
+
+    %orig;
+}
+
+%end
+
+
+// cell within the PlaylistsViewController
+%hook AddNewPlaylistCell
+%property(assign, nonatomic) BOOL shouldApplyCustomValues;
+
+// default initializer
+- (id)initWithFrame:(CGRect)arg1 {
+    id orig = %orig;
+
+    [self setShouldApplyCustomValues:NO];
+
+    return orig;
+}
+
+// lays out this views subviews
+- (void)layoutSubviews {
+
+    if ([self shouldApplyCustomValues]) {
+        
+        // change the size of the artwork to fit within the new cell size
+        id artworkComponent = MSHookIvar<id>(self, "artworkComponent");
+        CGFloat imageSideLength = MAX([self bounds].size.height - 14, 0);
+
+        MSHookIvar<CGSize>(artworkComponent, "idealImageSize") = CGSizeMake(imageSideLength, imageSideLength);
+    }
+
+    %orig;
+}
+
+%end
+
 %end
 
 // layout hooks constructor
@@ -734,7 +893,10 @@ extern "C" void InitBackport() {
     if ([meloManager prefsBoolForKey:@"backportHooksEnabled"]) {
         %init(BackportGroup, 
             PlayerTimeControl = objc_getClass("MusicApplication.PlayerTimeControl"),
-            VolumeSlider = objc_getClass("_TtCC16MusicApplication32NowPlayingControlsViewController12VolumeSlider")
+            VolumeSlider = objc_getClass("_TtCC16MusicApplication32NowPlayingControlsViewController12VolumeSlider"),
+            PlaylistsViewController = objc_getClass("MusicApplication.PlaylistsViewController"),
+            PlaylistCell = objc_getClass("MusicApplication.PlaylistCell"),
+            AddNewPlaylistCell = objc_getClass("MusicApplication.AddNewPlaylistCell")
         );
     }
 }

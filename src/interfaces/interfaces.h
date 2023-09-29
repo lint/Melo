@@ -11,3 +11,5 @@
 #import "MusicNowPlayingControlsViewController.h"
 #import "PlayerTimeControl.h"
 #import "VolumeSlider.h"
+#import "PlaylistsViewController.h"
+#import "PlaylistCell.h"

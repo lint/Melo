@@ -10,7 +10,7 @@
 			<key>label</key>
 			<string>Enabled</string>
 			<key>footerText</key>
-			<string>Restart the Music app to enable/disable hooks.</string>
+			<string>Restart the Music app to enable/disable hooks. Other settings are applied automatically.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -46,6 +46,65 @@
 			<string>newMusicPlayerEnabled</string>
 			<key>label</key>
 			<string>New Music Player Enabled</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Playlists Page</string>
+			<key>footerText</key>
+			<string>Default height = 116 and iOS 16 height = 80. </string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/backport.updated</string>
+			<key>key</key>
+			<string>smallerPlaylistsViewCellsEnabled</string>
+			<key>label</key>
+			<string>Smaller Playlists Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/backport.updated</string>
+			<key>key</key>
+			<string>customPlaylistCellHeightEnabled</string>
+			<key>label</key>
+			<string>Custom Cell Height</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>80</integer>
+			<key>min</key>
+			<integer>50</integer>
+			<key>max</key>
+			<integer>200</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/backport.updated</string>
+			<key>key</key>
+			<string>customPlaylistCellHeight</string>
+			<key>label</key>
+			<string>Height</string>
 		</dict>
 	</array>
 	<key>title</key>

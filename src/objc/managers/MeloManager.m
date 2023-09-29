@@ -44,6 +44,16 @@ static MeloManager *sharedMeloManager;
 
         [Logger logString:@"MeloManager - init"];
 
+
+        // NSArray *a1 = [NSArray arrayWithObjects:@"1", @"2", nil];
+        // NSArray *a2 = [NSArray arrayWithObjects:@"0", @"1", @"2", nil];
+        
+        // NSOrderedCollectionDifference *diff = [a2 differenceFromArray:nil];
+        // [Logger logStringWithFormat:@"insertions: %@", [diff insertions]];
+        // [Logger logStringWithFormat:@"removals: %@", [diff removals]];
+    
+
+
         [self loadPrefs];
 
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
@@ -119,7 +129,10 @@ static MeloManager *sharedMeloManager;
         @"customAlbumCellFontSize": @12,
         @"wiggleModeShakeAnimationsEnabled": @YES,
         @"backportHooksEnabled": @YES,
-        @"newMusicPlayerEnabled": @NO
+        @"newMusicPlayerEnabled": @NO,
+        @"smallerPlaylistsViewCellsEnabled": @NO,
+        @"customPlaylistCellHeightEnabled": @NO,
+        @"customPlaylistCellHeight": @50
     }];
 }
 
