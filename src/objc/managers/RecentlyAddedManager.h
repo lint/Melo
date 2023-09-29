@@ -7,6 +7,8 @@
 // manager class to inject album/section data for each LibraryRecentlyAddedViewController 
 @interface RecentlyAddedManager : NSObject
 @property(strong, nonatomic) NSMutableArray *sections;
+@property(strong, nonatomic) NSMutableDictionary *albumMap;
+@property(strong, nonatomic) NSArray *albumIdentOrder;
 @property(assign, nonatomic) BOOL processedRealAlbumOrder;
 @property(strong, nonatomic) NSUserDefaults *defaults;
 @property(assign, nonatomic) BOOL attemptedDataLoad;
@@ -19,7 +21,6 @@
 
 - (instancetype)init;
 - (NSIndexPath *)translateIndexPath:(NSIndexPath *)arg1;
-- (NSArray *)albumIdentOriginalOrder;
 - (void)processRealAlbumOrder:(NSArray *)arg1;
 - (void)updateIsReadyForUse;
 

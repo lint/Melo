@@ -27,9 +27,8 @@
         _processedRealAlbumOrder = NO;
         _sections = [NSMutableArray array];
 
-        // adding two sections for now...
-        [_sections addObject:[Section emptyPinnedSection]];
-        [_sections addObject:[Section emptyRecentSection]];
+        _albumMap = [NSMutableDictionary dictionary];
+        _albumIdentOrder = [NSArray array];
 
         [[MeloManager sharedInstance] addRecentlyAddedManager:self];
 
@@ -61,127 +60,72 @@
     _isReadyForUse = _processedRealAlbumOrder && _attemptedDataLoad;
 }
 
-// return an array of Album objects in their real order
-- (NSArray *)albumIdentOriginalOrder {
-    [[Logger sharedInstance] logStringWithFormat:@"RecentlyAddedManager:%p - recreateAlbumOrder", self];
-
-    NSInteger numberOfTotalAlbums = [self numberOfTotalAlbums];
-    [[Logger sharedInstance] logStringWithFormat:@"numberOfTotalAlbums: %li", numberOfTotalAlbums];
-    NSMutableArray *realAlbumOrder = [NSMutableArray arrayWithCapacity:numberOfTotalAlbums];
-
-    // albums will not be inserted properly if attempting to recreate the original order before data has been processed 
-    if (_processedRealAlbumOrder) {
-        [[Logger sharedInstance] logString:@"has previously processed real album order, recreating it..."];
-        
-        // fill the array with null values
-        for (int i = 0; i < numberOfTotalAlbums; i++) {
-            [realAlbumOrder addObject:[NSNull null]];
-        }
-
-        // insert every album into the array at its real index
-        for (Section *section in _sections) {
-
-            // [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
-
-            for (Album *album in section.albums) {
-                // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
-                realAlbumOrder[album.realIndex] = album.identifier;
-            }
-        }
-    } else {
-        [[Logger sharedInstance] logString:@"has NOT previously processed real album order, just adding albums to array"];
-
-        // insert every album into the array
-        for (Section *section in _sections) {
-
-            // [[Logger sharedInstance] logStringWithFormat:@"inserting albums from section: %@ to real order", section];
-
-            for (Album *album in section.albums) {
-                // [[Logger sharedInstance] logStringWithFormat:@"inserting album: %@", album];
-                [realAlbumOrder addObject:album.identifier];
-            }
-        }
-    }
-
-    return realAlbumOrder;
-}
-
 // process the real / original order of albums so they can be mapped to new positions
-- (void)processRealAlbumOrder:(NSArray *)realAlbumOrder {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"RecentlyAddedManager: %p - processRealAlbumOrder:(%p)", self, realAlbumOrder]];
+- (void)processRealAlbumOrder:(NSArray *)nextAlbumIdentOrder {
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"RecentlyAddedManager: %p - processRealAlbumOrder:(%p)", self, nextAlbumIdentOrder]];
 
-    // TODO: this needs to be improved!! would fix some lag
+    NSArray *lastAlbumIdentOrder = [self albumIdentOrder];
 
-    // create arrays of just the ids of each of the albums
-    NSArray *recreatedAlbumIdentOrder = [self albumIdentOriginalOrder];
-    NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
-
-    for (Album *album in realAlbumOrder) {
-        // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"new order album: %@", album]];
-        [realAlbumIdentOrder addObject:album.identifier];
-    }
-
-    // process the new order if it has changed
-    if (![realAlbumIdentOrder isEqualToArray:recreatedAlbumIdentOrder]) {
-        _processedRealAlbumOrder = NO;
-
+    // check if the new real album id order is different than the last album id order
+    if (![nextAlbumIdentOrder isEqualToArray:lastAlbumIdentOrder]) {
         [[Logger sharedInstance] logString:@"order changed, will process"];
 
-        // TODO: better way of doing this here? perhaps by using differenceFromArray?
-        // remove any album that is not in the real order
-        for (NSString *albumID in recreatedAlbumIdentOrder) {
-
-            if (![realAlbumIdentOrder containsObject:albumID]) {
-                // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"found album to be removed: %@", albumID]];
-                [self removeAlbumWithIdentifier:albumID];
-            }
-        }
-        // [[Logger sharedInstance] logStringWithFormat:@"%ld", [_sections count]];
-
-        // remove all non pinned albums 
+        _processedRealAlbumOrder = NO;
+        _albumIdentOrder = nextAlbumIdentOrder;
         Section *recentSection = [self recentSection];
-        [recentSection removeAllAlbums];
 
-        NSArray *pinnedAlbums = [self pinnedAlbums];
-        int count = 0;
+        NSMutableDictionary *diff = [NSMutableDictionary dictionary];
 
-        // TODO: these double for loops probably aren't great
+        // add any previously saved album ids to the diff map
+        for (NSString *ident in lastAlbumIdentOrder) {
+            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+            entry[@"inLast"] = @YES;
+            entry[@"inNext"] = @NO;
+            diff[ident] = entry;
+        }
 
-        for (Album *album in realAlbumOrder) {
+        NSInteger newAlbumInsertionIndex = 0;
 
-            BOOL foundMatch = NO;
+        // update diff map for album ids in the next album id order
+        for (NSInteger i = 0; i < [nextAlbumIdentOrder count]; i++) {
             
-            // see if the given album is a pinned album
-            for (Album *pinnedAlbum in pinnedAlbums) {
-                if ([album.identifier isEqualToString:pinnedAlbum.identifier]) {
+            NSString *ident = nextAlbumIdentOrder[i];
+            NSMutableDictionary *entry = diff[ident];
 
-                    // [[Logger sharedInstance] logStringWithFormat:@"matched album in pinned section, album ident: %@", [album identifier]];
+            if (!entry) {
+                entry = [NSMutableDictionary dictionary];
+                entry[@"inLast"] = @NO;
+                diff[ident] = entry;
 
-                    // update the pinned album object
-                    pinnedAlbum.artist = album.artist;
-                    pinnedAlbum.title = album.title;
-                    pinnedAlbum.realIndex = album.realIndex;
-
-                    foundMatch = YES;
-                    break;
-                }
+                // create a new album object and insert it into the recent section
+                Album *album = [Album new];
+                album.identifier = ident;
+                _albumMap[ident] = album;
+                [recentSection insertAlbum:album atIndex:newAlbumInsertionIndex++];
             }
 
-            // add any non pinned album to the recent section in the real order
-            if (!foundMatch) {
-                // [[Logger sharedInstance] logStringWithFormat:@"adding album to recently added section, album ident: %@", [album identifier]];
-                [recentSection addAlbum:album];
+            entry[@"inNext"] = @YES;
+            entry[@"realIndex"] = @(i);
+        }
+
+        // iterate over the changes to the real album id order
+        for (NSString *ident in diff) {
+            NSMutableDictionary *entry = diff[ident];
+            Album *album = _albumMap[ident];
+            
+            // remove any albums that no longer appear in the order
+            if ([entry[@"inLast"] boolValue] && ![entry[@"inNext"] boolValue]) {
+                [album.section removeAlbum:album];
+                [_albumMap removeObjectForKey:ident];
+            
+            // update the real index of any album that will be displayed
+            } else {
+                album.realIndex = [entry[@"realIndex"] integerValue];
             }
         }
     }
 
     _processedRealAlbumOrder = YES;
-
-    // save data here??
-    if (_attemptedDataLoad) {
-        [self saveData];
-    }
-
     [self updateIsReadyForUse];
 }
 
@@ -398,6 +342,7 @@
 
     _sections = [NSMutableArray array];
     _processedRealAlbumOrder = NO;
+    _albumMap = [NSMutableDictionary dictionary];
 
     NSString *userDefaultsKey = [self userDefaultsKey];
     MeloManager *meloManager = [MeloManager sharedInstance];
@@ -425,7 +370,7 @@
 
     // check if data was able to be loaded
     if (data) {
-        // create section object for every loaded dictioanry
+        // create section object for every loaded dictionary
         for (NSInteger i = 0; i < [data count]; i++) {
             Section *section = [[Section alloc] initWithDictionary:data[i]];
             [defaultsSections addObject:section];
@@ -471,7 +416,7 @@
         // // create section and album objects
         // if (data) {
 
-        //     // create section object for every loaded dictioanry
+        //     // create section object for every loaded dictionary
         //     for (int i = 0; i < [data count]; i++) {
         //         Section *section = [[Section alloc] initWithDictionary:data[i]];
         //         [_sections addObject:section];
@@ -539,25 +484,21 @@
         }
     }
 
-    // remove any fake albums that might've been accidentally saved
-    // for (Section *section in _sections) {
-    //     [section removeAlbumWithIdentifier:@"MELO_ALBUM_WIGGLE_MODE_INSERTION"];
-    // }
+    NSMutableArray *unorderedAlbumIds = [NSMutableArray array];
 
-    // TODO: condense these two for loops into one?
+    for (Section *section in _sections) {
+        // TODO: why did i comment this out?
+        // remove any fake albums that might've been accidentally saved
+        // [section removeAlbumWithIdentifier:@"MELO_ALBUM_WIGGLE_MODE_INSERTION"];
         
-    // }
+        // add all albums to the album map
+        for (Album *album in section.albums) {
+            _albumMap[album.identifier] = album;
+            [unorderedAlbumIds addObject:album.identifier];
+        }
+    }
 
-    // TODO: (remove this?)
-    // first check if custom sections is enabled
-    // if not, do what you did above
-    // oooo how should I deal with saving and loading and switching between modes...
-    // i think i want to save both
-    // soo add another suffix to the user defaults key when custom sections is enabled
-    // anyway, if custom sections is enabled, load the list of sections from the prefs
-    // load the saved albums and sections from user defaults
-    // remove any sections that do not appear in the prefs list and also reorder them to match prefs list
-    // this can be done by iterating thru prefs list, and adding the saved album to the list 
+    _albumIdentOrder = unorderedAlbumIds;
 
     _attemptedDataLoad = YES;
     [self updateIsReadyForUse];

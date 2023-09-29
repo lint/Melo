@@ -638,44 +638,17 @@
 
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     MPModelResponse *response = MSHookIvar<MPModelResponse *>(self, "_modelResponse");
-    NSMutableArray *realAlbumOrder = [NSMutableArray array];
+    NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
 
     if (response) {
-
-        NSInteger realIndex = 0;
 
         for (id item in [[response results] allItems]) {
 
             NSString *identifier = [@([[item identifiers] persistentID]) stringValue];
-            NSDictionary *info;
-
-            if ([item album]) {
-                MPModelAlbum *album = [item album];
-                info = @{
-                    @"identifier" : identifier, 
-                    @"artist" : [[album artist] name] ?: @"TEMP_ARTIST_NAME", 
-                    @"title" : [album title] ?: @"TEMP_ALBUM_TITLE",
-                    @"realIndex": @(realIndex++)
-                };
-            } else if ([item playlist]) {
-                MPModelPlaylist *playlist = [item playlist];
-                info = @{
-                    @"identifier" : identifier, 
-                    @"artist" : [[playlist curator] name] ?: @"TEMP_ARTIST_NAME",
-                    @"title" : [playlist name] ?: @"TEMP_PLAYLIST_NAME",
-                    @"realIndex": @(realIndex++)
-                };
-            } else {
-                [[Logger sharedInstance] logString:@"could not get either album or playlist from library response"];
-            }
-
-            Album *album = [[Album alloc] initWithDictionary:info];
-
-            [realAlbumOrder addObject:album];
-            // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"id: %@, artist: %@, title: %@", info[@"identifier"], info[@"artist"], info[@"title"]]];
+            [realAlbumIdentOrder addObject:identifier];
         }
 
-        [recentlyAddedManager processRealAlbumOrder:realAlbumOrder];
+        [recentlyAddedManager processRealAlbumOrder:realAlbumIdentOrder];
     }
 }
 

@@ -37,6 +37,7 @@
 
         for (NSDictionary *albumDict in arg1[@"albums"]) {
             Album *album = [[Album alloc] initWithDictionary:albumDict];
+            album.section = self;
             // [[Logger sharedInstance] logStringWithFormat:@"adding album%@", arg1];
             [_albums addObject:album];
         }
@@ -121,11 +122,13 @@
 // add a given album to the end of the section
 - (void)addAlbum:(Album *)arg1 {
     [_albums addObject:arg1];
+    arg1.section = self;
 }
 
 // add a given album to a given index in the section
 - (void)insertAlbum:(Album *)arg1 atIndex:(NSInteger)arg2 {
     [_albums insertObject:arg1 atIndex:arg2];
+    arg1.section = self;
 }
 
 // swap the position of two albums in the section
