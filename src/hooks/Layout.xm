@@ -54,7 +54,7 @@
     if ([self shouldApplyCornerRadius]) {
 
         UIView *artworkView = MSHookIvar<UIView *>(MSHookIvar<id>(self, "artworkComponent"), "imageView");
-        CGFloat radius = [[meloManager prefsObjectForKey:@"customAlbumCellCornerRadius"] floatValue] / 100 * [self frame].size.width;
+        CGFloat radius = [meloManager prefsFloatForKey:@"customAlbumCellCornerRadius"] / 100 * [self frame].size.width;
 
         [artworkView setClipsToBounds:YES];
         [[artworkView layer] setCornerRadius:radius];
@@ -131,7 +131,7 @@
     [customTextView setArtistText:[self artistName]];
     [customTextView setShouldShowExplicitBadge:[self accessibilityIsExplicit]];
     [customTextView setSpacing:[meloManager albumCellTextSpacing]];
-    [customTextView setLabelFontSize:[[meloManager prefsObjectForKey:@"customAlbumCellFontSize"] integerValue]];
+    [customTextView setLabelFontSize:[meloManager prefsIntForKey:@"customAlbumCellFontSize"]];
 }
 
 %end

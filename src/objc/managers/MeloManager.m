@@ -84,6 +84,16 @@ static dispatch_function_t createSharedMeloManager() {
     return [[self prefsObjectForKey:arg1] boolValue];
 }
 
+// returns an integer stored in preferences with the given key
+- (NSInteger)prefsIntForKey:(NSString *)arg1 {
+    return [[self prefsObjectForKey:arg1] integerValue];
+}
+
+// returns a float stored in preferences with the given key
+- (CGFloat)prefsFloatForKey:(NSString *)arg1 {
+    return [[self prefsObjectForKey:arg1] floatValue];
+}
+
 // returns an object stored in preferences with the given key
 - (id)prefsObjectForKey:(NSString *)arg1 {
     return _prefs[arg1] ?: _defaultPrefs[arg1];
@@ -169,15 +179,15 @@ static dispatch_function_t createSharedMeloManager() {
 // updates the values for all properties related to collection view sizing and spacing
 - (void)updateCollectionViewLayoutValues {
     
-    NSInteger customNumColumns = [[self prefsObjectForKey:@"customNumColumns"] integerValue];
+    NSInteger customNumColumns = [self prefsIntForKey:@"customNumColumns"];
     NSInteger numLibraryColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? customNumColumns : 2;
     NSInteger numOtherColumns = [self prefsBoolForKey:@"customNumColumnsEnabled"] && [self prefsBoolForKey:@"mainLayoutAffectsOtherAlbumPagesEnabled"] ? customNumColumns : 2;
     NSInteger screenWidth = [[UIScreen mainScreen] bounds].size.width; // can't be done in %ctor
-    UIFont *customTextFont = [UIFont systemFontOfSize:[[self prefsObjectForKey:@"customAlbumCellFontSize"] integerValue]];
+    UIFont *customTextFont = [UIFont systemFontOfSize:[self prefsIntForKey:@"customAlbumCellFontSize"]];
 
     // the spacing between album cells
     if ([self prefsBoolForKey:@"customAlbumCellSpacingEnabled"]) {
-        _collectionViewCellSpacing = [[self prefsObjectForKey:@"customAlbumCellSpacing"] floatValue];
+        _collectionViewCellSpacing = [self prefsFloatForKey:@"customAlbumCellSpacing"];
     } else {
         _collectionViewCellSpacing = [self prefsBoolForKey:@"customNumColumnsEnabled"] ? (10 - customNumColumns) / 10 * 2.5 + 5 : 20;
     }

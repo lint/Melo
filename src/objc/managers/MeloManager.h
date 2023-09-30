@@ -27,6 +27,8 @@
 
 - (void)loadPrefs;
 - (BOOL)prefsBoolForKey:(NSString *)arg1;
+- (NSInteger)prefsIntForKey:(NSString *)arg1;
+- (CGFloat)prefsFloatForKey:(NSString *)arg1;
 - (id)prefsObjectForKey:(NSString *)arg1;
 
 - (void)checkClearPins;

@@ -759,7 +759,7 @@
 
         // check if custom height is enabled
         if ([meloManager prefsBoolForKey:@"customPlaylistCellHeightEnabled"]) {
-            return [[meloManager prefsObjectForKey:@"customPlaylistCellHeight"] floatValue];
+            return [meloManager prefsFloatForKey:@"customPlaylistCellHeight"];
         } else {
             return 80; // ios 16 cell height
         }

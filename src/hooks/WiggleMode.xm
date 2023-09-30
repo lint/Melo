@@ -108,7 +108,7 @@
 
         CGFloat radius;            
         if ([meloManager prefsBoolForKey:@"customAlbumCellCornerRadiusEnabled"]) {
-            radius = [[meloManager prefsObjectForKey:@"customAlbumCellCornerRadius"] floatValue] / 100 * [self frame].size.width;
+            radius = [meloManager prefsFloatForKey:@"customAlbumCellCornerRadius"] / 100 * [self frame].size.width;
         } else {
             radius = 4; // default radius
         }

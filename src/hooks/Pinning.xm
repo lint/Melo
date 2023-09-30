@@ -479,7 +479,7 @@
             NSArray *newChildren;
 
             // placing custom actions at top or bottom of the menu
-            BOOL placeMenuAtTop = [[meloManager prefsObjectForKey:@"contextActionsLocationValue"] integerValue] == 0;
+            BOOL placeMenuAtTop = [meloManager prefsIntForKey:@"contextActionsLocationValue"] == 0;
             if (placeMenuAtTop) {
                 newChildren = [customActions arrayByAddingObjectsFromArray:[origMenu children]];
             } else {
@@ -648,6 +648,7 @@
             [realAlbumIdentOrder addObject:identifier];
         }
 
+        // [recentlyAddedManager performSelectorInBackground:@selector(processRealAlbumOrder:) withObject:realAlbumIdentOrder];
         [recentlyAddedManager processRealAlbumOrder:realAlbumIdentOrder];
     }
 }
@@ -913,6 +914,7 @@
     id dataSource = [self dataSource];
     if (dataSource && [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
         [dataSource checkAlbumOrder];
+        // [dataSource performSelectorInBackground:@selector(checkAlbumOrder) withObject:nil];
     }
 
     //%orig;
