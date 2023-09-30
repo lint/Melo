@@ -5,6 +5,9 @@
 #import "../../interfaces/interfaces.h"
 
 static MeloManager *sharedMeloManager;
+static dispatch_function_t createSharedMeloManager() {
+    sharedMeloManager = [MeloManager new];
+}
 
 @implementation MeloManager
 
@@ -25,16 +28,12 @@ static MeloManager *sharedMeloManager;
 	// dispatch_once(&onceToken, ^{
 	// 	sharedInstance = [MeloManager new];
 	// });
+    // return sharedInstance;
 
-	// return sharedInstance;
+    static dispatch_once_t onceToken;
+    dispatch_once_f(&onceToken, nil, createSharedMeloManager);
 
-    // need hacky sharedInstance while using Allemand
-    @synchronized([NSNull null]) {
-        if (!sharedMeloManager) {
-            sharedMeloManager = [MeloManager new];
-        }
-        return sharedMeloManager;    
-    }
+	return sharedMeloManager;
 }
 
 // default initializer

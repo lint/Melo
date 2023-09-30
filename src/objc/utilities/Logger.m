@@ -3,6 +3,9 @@
 #import "../managers/managers.h"
 
 static Logger *sharedLogger;
+static dispatch_function_t createSharedLogger() {
+    sharedLogger = [Logger new];
+}
 
 @implementation Logger
 
@@ -18,16 +21,12 @@ static Logger *sharedLogger;
 	// dispatch_once(&onceToken, ^{
 	// 	sharedInstance = [Logger new];
 	// });
-
 	// return sharedInstance;
 
-    // need hacky sharedInstance while using Allemand
-    @synchronized([NSNull null]) {
-        if (!sharedLogger) {
-            sharedLogger = [Logger new];
-        }
-        return sharedLogger;    
-    }
+    static dispatch_once_t onceToken;
+    dispatch_once_f(&onceToken, nil, createSharedLogger);
+
+	return sharedLogger;
 }
 
 // default initializer
