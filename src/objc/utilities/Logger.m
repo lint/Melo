@@ -60,7 +60,7 @@ static dispatch_function_t createSharedLogger() {
         _logFilePath = [NSString stringWithFormat:@"%@/%@_log.txt", _logFileDir, dateString];
 
         // lock object to provide synchronous writes to the log file
-        _lock = [NSObject new];
+        // _lock = [NSObject new];
 
         // try to read the log file's contents if it already exists
         NSError *error = nil;
@@ -81,7 +81,7 @@ static dispatch_function_t createSharedLogger() {
         return;
     }
 
-    @synchronized(_lock) {
+    @synchronized(self) {
 
         NSError *error = nil;
 

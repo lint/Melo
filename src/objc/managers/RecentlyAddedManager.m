@@ -42,11 +42,7 @@
 
 // convert an album's adjusted index path (which was injected into the collection view) to it's original index path
 - (NSIndexPath *)translateIndexPath:(NSIndexPath *)arg1 {
-
-    Section *section = _sections[arg1.section];
-    Album *album = [section albumAtIndex:arg1.item];
-    // Album *album = _sections[arg1.section].albums[arg1.item];
-    return [album realIndexPath];
+    return [[_sections[arg1.section] albumAtIndex:arg1.item] realIndexPath];
 }
 
 // determine if data is ready to be injected
@@ -69,6 +65,7 @@
     // check if the new real album id order is different than the last album id order
     if (![nextAlbumIdentOrder isEqualToArray:lastAlbumIdentOrder]) {
         [[Logger sharedInstance] logString:@"order changed, will process"];
+        // [Logger logStringWithFormat:@"next count: %ld, last count: %ld", [nextAlbumIdentOrder count], [lastAlbumIdentOrder count]];
 
         _processedRealAlbumOrder = NO;
         _albumIdentOrder = nextAlbumIdentOrder;
@@ -78,13 +75,18 @@
 
         // add any previously saved album ids to the diff map
         for (NSString *ident in lastAlbumIdentOrder) {
+            Album *album = _albumMap[ident];
             NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+            
             entry[@"inLast"] = @YES;
             entry[@"inNext"] = @NO;
+            entry[@"inRecentSection"] = @(album.section == recentSection);
+
             diff[ident] = entry;
         }
 
-        NSInteger newAlbumInsertionIndex = 0;
+        // reset the recent section so that albums can be added to it in the correct order
+        [recentSection removeAllAlbums];
 
         // update diff map for album ids in the next album id order
         for (NSInteger i = 0; i < [nextAlbumIdentOrder count]; i++) {
@@ -92,26 +94,32 @@
             NSString *ident = nextAlbumIdentOrder[i];
             NSMutableDictionary *entry = diff[ident];
 
+            // create entry if it was not in the last album order
             if (!entry) {
                 entry = [NSMutableDictionary dictionary];
                 entry[@"inLast"] = @NO;
                 diff[ident] = entry;
-
-                // create a new album object and insert it into the recent section
-                Album *album = [Album new];
-                album.identifier = ident;
-                _albumMap[ident] = album;
-                [recentSection insertAlbum:album atIndex:newAlbumInsertionIndex++];
+                entry[@"inRecentSection"] = @YES;
             }
 
             entry[@"inNext"] = @YES;
             entry[@"realIndex"] = @(i);
+
+            // create a new album object and insert it into the recent section
+            if ([entry[@"inRecentSection"] boolValue]) {
+                Album *album = [Album new];
+                album.identifier = ident;
+
+                _albumMap[ident] = album;
+                [recentSection addAlbum:album];
+            }
         }
 
         // iterate over the changes to the real album id order
         for (NSString *ident in diff) {
             NSMutableDictionary *entry = diff[ident];
             Album *album = _albumMap[ident];
+            // [Logger logStringWithFormat:@"realIndex: %ld", album.realIndex];
             
             // remove any albums that no longer appear in the order
             if ([entry[@"inLast"] boolValue] && ![entry[@"inNext"] boolValue]) {

@@ -48,6 +48,7 @@
 @interface MPSectionedCollection : NSObject
 @property(strong, nonatomic) id firstItem;
 - (NSArray *)allItems;
+- (NSInteger)numberOfSections;
 @end
 
 @interface MPModelResponse : NSObject
