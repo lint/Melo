@@ -1,0 +1,4 @@
+#!/bin/sh
+
+patch_melo > /dev/null
+echo "patch_melo execution complete"
