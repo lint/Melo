@@ -28,11 +28,52 @@
 
 %end
 
+
+// response object containing results from a library request
+%hook MPModelLibraryResponse 
+
+// the results of a request are complete
+- (void)setResults:(MPSectionedCollection *)arg1 {
+
+    %orig;
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    // get the identifier of the library of the request
+    NSString *libraryIdentifier = [[self libraryAssertion] identifier];
+
+    // get the localized titles of the two libraries that are requested
+    NSString *localizedRecentlyAddedTitle = [MeloManager localizedRecentlyAddedTitle];
+    NSString *localizedDownloadedMusicTitle = [MeloManager localizedDownloadedMusicTitle];
+
+    // send a notification to recently added managers containing the new results
+    if ([localizedRecentlyAddedTitle isEqualToString:libraryIdentifier] || [localizedDownloadedMusicTitle isEqualToString:libraryIdentifier]) {
+
+        NSDictionary *userInfo = @{
+            @"identifier" : libraryIdentifier,
+            @"results": [arg1 copy]
+        };
+
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"MELO_NOTIFICATION_LIBRARY_RESPONSE_RESULTS_UPDATED" object:self userInfo:userInfo];
+    }
+}
+
+%end
+
+// header views in the recently added sections
 %hook TitleSectionHeaderView
 %property(strong, nonatomic) UIImageView *chevronIndicatorView;
 %property(strong, nonatomic) NSString *identifier;
 %property(strong, nonatomic) UITapGestureRecognizer *tapGesture;
 %property(strong, nonatomic) LibraryRecentlyAddedViewController *recentlyAddedViewController;
+%property(assign, nonatomic) BOOL shouldApplyCollapseItems;
+
+// default initializer
+- (id)initWithFrame:(CGRect)arg1 {
+    id orig = %orig;
+    [orig setShouldApplyCollapseItems:NO];
+    return orig;
+}
 
 // returns the recently added manager associated with the library recently added view controller
 %new 
@@ -53,7 +94,6 @@
 // create UI items that are used to collapse sections
 %new
 - (void)createCollapseItems {
-
 
     MeloManager *meloManager = [MeloManager sharedInstance];
     WiggleModeManager *wiggleManager = [[self recentlyAddedViewController] wiggleModeManager];
@@ -104,9 +144,7 @@
 - (void)layoutSubviews {
     %orig;
 
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-
-    if (recentlyAddedManager && [recentlyAddedManager isReadyForUse]) {
+    if ([self shouldApplyCollapseItems]) {
 
         UIImageView *chevronIndicatorView = [self chevronIndicatorView];
         UIView *titleDrawingView = MSHookIvar<UIView *>(self, "titleTextDrawingView");
@@ -193,84 +231,56 @@
 %property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 %property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
 %property(strong, nonatomic) AnimationManager *animationManager;
+%property(assign) BOOL shouldInjectPinningData;
 
+// default initializer
 - (id)init {
 
     [Logger logStringWithFormat:@"LRAVC: %p - init", self];
     
-
     RecentlyAddedManager *recentlyAddedManager = [RecentlyAddedManager new];
     WiggleModeManager *wiggleManager = [WiggleModeManager new];   
     AnimationManager *animationManager = [AnimationManager new]; 
 
+    recentlyAddedManager.lravc = self;
+
     [self setRecentlyAddedManager:recentlyAddedManager];
     [self setWiggleModeManager:wiggleManager];
     [self setAnimationManager:animationManager];
+    [self setShouldInjectPinningData:NO];
 
     id orig = %orig;
 
     // add an observer for whenever a pinning preferences change was detected
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePinningPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_PINNING" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePinningPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_PINNING" object:[MeloManager sharedInstance]];
     
-    [Logger logStringWithFormat:@"orig: %p, class: %@", orig, [orig class]];
     return orig;
 }
 
-- (void)viewWillAppear:(BOOL)arg1 {
-
-    // use this to detect which library view controller it is?
-    // need to be able to read the title, which does get set later...able
-    // any other way to differentiate them?
-
-    [[MeloManager sharedInstance] setCurrentLRAVC:self];
-
-    %orig;
-
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewWillAppear:(%i)", self, arg1]];
-
-    // [[self recentlyAddedManager] loadData];
+// helper method to access the model response ivar
+%new
+- (MPModelResponse *)modelResponse {
+    MPModelResponse *response = MSHookIvar<MPModelResponse *>(self, "_modelResponse");
+    return response;
 }
 
-- (void)viewWillDisappear:(BOOL)arg1 {
-    %orig;
-    // [[self recentlyAddedManager] saveData];
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewWillDisappear:(%i)", self, arg1]];
+// update the collection view when a change to the album order or pinning order (from another manager) is changed
+%new
+- (void)reloadDataForAlbumUpdate {
+    [Logger logStringWithFormat:@"LRAVC: %p - handlePinningDataIsReady: ", self];
 
-    if ([self wiggleModeManager].inWiggleMode) {
-        [self toggleWiggleMode];
-    }
-}
-
-- (void)viewDidAppear:(BOOL)arg1 {
-    %orig;
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewDidAppear:(%i)", self, arg1]];
-
-    [[MeloManager sharedInstance] setCurrentLRAVC:self];
-
-    // was potentially going to put in a check to see if a change was detected from another library recently added view controller instance
-    // this would be tracked thru meloManager somehow
-    // but this seems to work?
-    // nvm it causes lag when going in / out of an album.. need this
-    
+    MeloManager *meloManager = [MeloManager sharedInstance];
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
-    if (recentlyAddedManager.unhandledDataChangeOccurred) {
+    BOOL isDownloadedMusic = [recentlyAddedManager isDownloadedMusic];
+    BOOL shouldInjectPinningData = !isDownloadedMusic || (isDownloadedMusic && [meloManager prefsBoolForKey:@"downloadedPinningEnabled"]);
 
-        [[self recentlyAddedManager] loadData];
+    [self setShouldInjectPinningData:shouldInjectPinningData];
 
-        UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
-        [collectionView reloadData];
-
-        recentlyAddedManager.unhandledDataChangeOccurred = NO;
+    UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
+    if (collectionView) {
+        [collectionView performSelectorOnMainThread:@selector(reloadData) withObject:nil waitUntilDone:NO];
     }
-}
-
-- (void)viewDidDisappear:(BOOL)arg1 {
-    %orig;
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewDidDisappear:(%i)", self, arg1]];
-
-    // [[self recentlyAddedManager] setAttemptedDataLoad:NO];
-    [[MeloManager sharedInstance] setCurrentLRAVC:nil];
 }
 
 - (void)viewDidLoad {
@@ -288,11 +298,46 @@
         
         for (id gesture in [collectionView gestureRecognizers]) {
             // [[Logger sharedInstance] logStringWithFormat:@"gestureRecognizer: %@", gesture];
-
             [gesture requireGestureRecognizerToFail:tapGesture];
         }
         [collectionView addGestureRecognizer:tapGesture];
     }
+}
+
+- (void)viewWillAppear:(BOOL)arg1 {
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewWillAppear:(%i)", self, arg1]];
+
+    // use this to detect which library view controller it is?
+    // need to be able to read the title, which does get set later...able
+    // any other way to differentiate them?
+
+    [[MeloManager sharedInstance] setCurrentLRAVC:self];
+    %orig;
+}
+
+- (void)viewDidAppear:(BOOL)arg1 {
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewDidAppear:(%i)", self, arg1]];
+
+    [[MeloManager sharedInstance] setCurrentLRAVC:self];
+    %orig;
+}
+
+- (void)viewWillDisappear:(BOOL)arg1 {
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewWillDisappear:(%i)", self, arg1]];
+    %orig;
+    // [[self recentlyAddedManager] saveData];
+
+    if ([self wiggleModeManager].inWiggleMode) {
+        [self toggleWiggleMode];
+    }
+}
+
+- (void)viewDidDisappear:(BOOL)arg1 {
+    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - viewDidDisappear:(%i)", self, arg1]];
+    %orig;
+
+    // [[self recentlyAddedManager] setAttemptedDataLoad:NO];
+    [[MeloManager sharedInstance] setCurrentLRAVC:nil];
 }
 
 - (void)setTitle:(NSString *)title {
@@ -305,10 +350,8 @@
 
     %orig;
 
-    NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
-
-    NSString *localizedRecentlyAddedTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
-    NSString *localizedDownloadedMusicTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_DOWNLOADED_VIEW_TITLE", @"Music", bundle, nil);
+    NSString *localizedRecentlyAddedTitle = [MeloManager localizedRecentlyAddedTitle];
+    NSString *localizedDownloadedMusicTitle = [MeloManager localizedDownloadedMusicTitle];
 
     if ([title isEqualToString:localizedRecentlyAddedTitle]) {
         [[self recentlyAddedManager] setIsDownloadedMusic:NO];
@@ -339,7 +382,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     
     // check if the manager is not ready to inject fake data
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     }
     
@@ -353,7 +396,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     
     // check if the manager is not ready to inject fake data
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
@@ -369,7 +412,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
     // check if the manager is not ready to inject fake data
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
@@ -393,6 +436,7 @@
 
     if ([[MeloManager sharedInstance] prefsBoolForKey:@"collapsibleSectionsEnabled"]) {
         [titleHeaderView createCollapseItems];
+        [titleHeaderView setShouldApplyCollapseItems:YES];
     }
 
     return orig;
@@ -406,7 +450,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
     // check if the manager is not ready to inject fake data
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
@@ -423,7 +467,7 @@
 
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         orig = %orig;
     } else {
         Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:arg2];
@@ -449,7 +493,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     MeloManager *meloManager = [MeloManager sharedInstance];
 
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     
     // do not allow context menu configurations to be generated at all in wiggle mode
@@ -516,7 +560,7 @@
     
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
@@ -528,8 +572,6 @@
     %orig(arg1, arg2, [recentlyAddedManager translateIndexPath:arg3]);
 
     // [[Logger sharedInstance] logString:@"finished willDisplayCell"];
-
-
 
     // out of bounds check that i used in the old code
     // if (arg3.item >= [self collectionView:MSHookIvar<UICollectionView *>(self, "_collectionView") numberOfItemsInSection:arg3.section]) {
@@ -547,7 +589,7 @@
     
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
@@ -562,7 +604,7 @@
 
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
@@ -594,7 +636,7 @@
   
     // check if recently added manager is ready to inject data
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
@@ -611,7 +653,7 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     
     // check if recently added manager is ready to inject data
-    if (![recentlyAddedManager isReadyForUse]) {
+    if (![self shouldInjectPinningData]) {
         return %orig;
     } else if ([self wiggleModeManager].inWiggleMode) {
         
@@ -631,27 +673,6 @@
 
 // -(id)_collectionView:(id)arg1 canEditItemAtIndexPath:(id)arg2 {
 // }
-
-%new
-- (void)checkAlbumOrder {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - checkAlbumOrder", self]];
-
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    MPModelResponse *response = MSHookIvar<MPModelResponse *>(self, "_modelResponse");
-    NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
-
-    if (response) {
-
-        for (id item in [[response results] allItems]) {
-
-            NSString *identifier = [@([[item identifiers] persistentID]) stringValue];
-            [realAlbumIdentOrder addObject:identifier];
-        }
-
-        // [recentlyAddedManager performSelectorInBackground:@selector(processRealAlbumOrder:) withObject:realAlbumIdentOrder];
-        [recentlyAddedManager processRealAlbumOrder:realAlbumIdentOrder];
-    }
-}
 
 %new
 - (void)handleActionMoveAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath toSection:(NSInteger)sectionIndex {
@@ -906,20 +927,6 @@
 
 %hook UICollectionView
 
-- (void)reloadData {
-    //%orig; //having it first seems to fix the didEndDisplayingCell crash bug, but then isReadyForUse is not YES in time for when the number of sections is checked
-
-    %orig;
-
-    id dataSource = [self dataSource];
-    if (dataSource && [dataSource isKindOfClass:objc_getClass("MusicApplication.LibraryRecentlyAddedViewController")]) {
-        [dataSource checkAlbumOrder];
-        // [dataSource performSelectorInBackground:@selector(checkAlbumOrder) withObject:nil];
-    }
-
-    //%orig;
-}
-
 // prevents crashing when opening a context menu in a section other than 0
 - (void)reloadItemsAtIndexPaths:(NSArray *)arg1 {
 
@@ -960,12 +967,12 @@
 // ios 14+ needs real index paths injected here as the adjusted index paths seem to be passed during [UICollectionView layoutSubviews]
 // this fixes a crash caused by scrolling down (to the point where the injected pinned section title leaves the screen)
 - (void)collectionView:(UICollectionView *)arg1 prefetchItemsAtIndexPaths:(id)arg2 {
-    [[Logger sharedInstance] logString:[NSString stringWithFormat:@"ArtworkPrefetchingController: %p - collectionView:(%p) prefetchItemsAtIndexPaths:(%@)", self, arg1, arg2]];
+    // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"ArtworkPrefetchingController: %p - collectionView:(%p) prefetchItemsAtIndexPaths:(%@)", self, arg1, arg2]];
 
     LibraryRecentlyAddedViewController *currentLRAVC = [[MeloManager sharedInstance] currentLRAVC];
 
     // check if this instance is for the current LibraryRecentlyAddedViewController
-    if (currentLRAVC && [currentLRAVC recentlyAddedManager] && [[currentLRAVC recentlyAddedManager] isReadyForUse] && arg1 == MSHookIvar<UICollectionView *>(currentLRAVC, "_collectionView")) {
+    if (currentLRAVC && [currentLRAVC shouldInjectPinningData] && arg1 == MSHookIvar<UICollectionView *>(currentLRAVC, "_collectionView")) {
 
         // translate all adjusted index paths to their real index path
         NSMutableArray *realIndexPaths = [NSMutableArray array];

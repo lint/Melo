@@ -3,6 +3,7 @@
 #import "HBLog.h"
 #import "../reflection/reflection.h"
 #import "../utilities/utilities.h"
+#import "../../interfaces/interfaces.h"
 #import "MeloManager.h"
 
 // should i synchronize access to the albums array with a mutex?
@@ -19,14 +20,9 @@
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         _skipLoad = NO;
 
-        _isReadyForUse = NO;
-
-        _attemptedDataLoad = NO;
         _isDownloadedMusic = NO;
 
-        _processedRealAlbumOrder = NO;
         _sections = [NSMutableArray array];
-
         _albumMap = [NSMutableDictionary dictionary];
         _albumIdentOrder = [NSArray array];
 
@@ -34,7 +30,10 @@
 
         _prefsDownloadedMusicEnabled = [[MeloManager sharedInstance] prefsBoolForKey:@"downloadedPinningEnabled"];
 
-        // [self loadData];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLibraryResponseResultsUpdate:) name:@"MELO_NOTIFICATION_LIBRARY_RESPONSE_RESULTS_UPDATED" object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleOtherManagerPinningOrderUpdate:) name:@"MELO_NOTIFICATION_MANAGER_PINNING_DATA_UPDATED" object:nil];
+
+        _albumProcessingLock = [NSObject new];
     }
 
     return self;
@@ -45,96 +44,141 @@
     return [[_sections[arg1.section] albumAtIndex:arg1.item] realIndexPath];
 }
 
-// determine if data is ready to be injected
-- (void)updateIsReadyForUse {
+// process the notification for when library results are finalized
+- (void)handleLibraryResponseResultsUpdate:(NSNotification *)arg1 {
 
-    if (_isDownloadedMusic && !_prefsDownloadedMusicEnabled) {
-        _isReadyForUse = NO;
+    [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleLibraryResponseResultsUpdate: %@", self, arg1];
+
+    NSString *ident = arg1.userInfo[@"identifier"];
+    MPSectionedCollection *results = arg1.userInfo[@"results"];
+
+    NSString *localizedRecentlyAddedTitle = [MeloManager localizedRecentlyAddedTitle];
+    NSString *localizedDownloadedMusicTitle = [MeloManager localizedDownloadedMusicTitle];
+
+    if (([localizedRecentlyAddedTitle isEqualToString:ident] && !_isDownloadedMusic) || 
+        ([localizedDownloadedMusicTitle isEqualToString:ident] && _isDownloadedMusic)) {
+
+        [self checkAlbumResults:results];
+    }
+}
+
+// process the notification for when another recently added manager updates the pinning data
+- (void)handleOtherManagerPinningOrderUpdate:(NSNotification *)arg1 {
+
+    [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleOtherManagerPinningOrderUpdate: %@", self, arg1];
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    // do not update if notification is coming from this manager or if syncing is disabled and the update is from a different type (recently added vs downloaded)
+    if (arg1.object == self || (_isDownloadedMusic != [arg1.object isDownloadedMusic] && ![meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"])) {
         return;
     }
 
-    _isReadyForUse = _processedRealAlbumOrder && _attemptedDataLoad;
+    [self reloadPinnedAlbumOrder];
+}
+
+// extract the identifiers from a results object and update albums accordingly
+- (void)checkAlbumResults:(MPSectionedCollection *)results {
+
+    [Logger logStringWithFormat:@"RecentlyAddedManager: %p - checkAlbumResults: %@", self, results];
+
+    if (!results) {
+        return;
+    }
+
+    NSMutableArray *realAlbumIdentOrder = [NSMutableArray array];
+
+    for (id item in [results allItems]) {
+        NSString *identifier = [@([[item identifiers] persistentID]) stringValue];
+        [realAlbumIdentOrder addObject:identifier];
+    }
+
+    [self processRealAlbumOrder:realAlbumIdentOrder];
 }
 
 // process the real / original order of albums so they can be mapped to new positions
 - (void)processRealAlbumOrder:(NSArray *)nextAlbumIdentOrder {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"RecentlyAddedManager: %p - processRealAlbumOrder:(%p)", self, nextAlbumIdentOrder]];
 
-    NSArray *lastAlbumIdentOrder = [self albumIdentOrder];
+    @synchronized(_albumProcessingLock) {
 
-    // check if the new real album id order is different than the last album id order
-    if (![nextAlbumIdentOrder isEqualToArray:lastAlbumIdentOrder]) {
-        [[Logger sharedInstance] logString:@"order changed, will process"];
-        // [Logger logStringWithFormat:@"next count: %ld, last count: %ld", [nextAlbumIdentOrder count], [lastAlbumIdentOrder count]];
+        NSArray *lastAlbumIdentOrder = [self albumIdentOrder];
 
-        _processedRealAlbumOrder = NO;
-        _albumIdentOrder = nextAlbumIdentOrder;
-        Section *recentSection = [self recentSection];
+        // check if the new real album id order is different than the last album id order
+        if (![nextAlbumIdentOrder isEqualToArray:lastAlbumIdentOrder]) {
+            [[Logger sharedInstance] logString:@"order changed, will process"];
+            [Logger logStringWithFormat:@"next count: %ld, last count: %ld", [nextAlbumIdentOrder count], [lastAlbumIdentOrder count]];
+            [Logger logStringWithFormat:@"albumMap: %p", _albumMap];
 
-        NSMutableDictionary *diff = [NSMutableDictionary dictionary];
+            _albumIdentOrder = nextAlbumIdentOrder;
+            Section *recentSection = [self recentSection];
 
-        // add any previously saved album ids to the diff map
-        for (NSString *ident in lastAlbumIdentOrder) {
-            Album *album = _albumMap[ident];
-            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-            
-            entry[@"inLast"] = @YES;
-            entry[@"inNext"] = @NO;
-            entry[@"inRecentSection"] = @(album.section == recentSection);
+            NSMutableDictionary *diff = [NSMutableDictionary dictionary];
 
-            diff[ident] = entry;
-        }
+            // add any previously saved album ids to the diff map
+            for (NSString *ident in lastAlbumIdentOrder) {
+                Album *album = _albumMap[ident];
+                NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+                
+                entry[@"inLast"] = @YES;
+                entry[@"inNext"] = @NO;
+                entry[@"inRecentSection"] = @(album.section == recentSection);
 
-        // reset the recent section so that albums can be added to it in the correct order
-        [recentSection removeAllAlbums];
-
-        // update diff map for album ids in the next album id order
-        for (NSInteger i = 0; i < [nextAlbumIdentOrder count]; i++) {
-            
-            NSString *ident = nextAlbumIdentOrder[i];
-            NSMutableDictionary *entry = diff[ident];
-
-            // create entry if it was not in the last album order
-            if (!entry) {
-                entry = [NSMutableDictionary dictionary];
-                entry[@"inLast"] = @NO;
                 diff[ident] = entry;
-                entry[@"inRecentSection"] = @YES;
             }
 
-            entry[@"inNext"] = @YES;
-            entry[@"realIndex"] = @(i);
+            // reset the recent section so that albums can be added to it in the correct order
+            [recentSection removeAllAlbums];
 
-            // create a new album object and insert it into the recent section
-            if ([entry[@"inRecentSection"] boolValue]) {
-                Album *album = [Album new];
-                album.identifier = ident;
+            // update diff map for album ids in the next album id order
+            for (NSInteger i = 0; i < [nextAlbumIdentOrder count]; i++) {
+                
+                NSString *ident = nextAlbumIdentOrder[i];
+                NSMutableDictionary *entry = diff[ident];
 
-                _albumMap[ident] = album;
-                [recentSection addAlbum:album];
+                // create entry if it was not in the last album order
+                if (!entry) {
+                    entry = [NSMutableDictionary dictionary];
+                    entry[@"inLast"] = @NO;
+                    diff[ident] = entry;
+                    entry[@"inRecentSection"] = @YES;
+                }
+
+                entry[@"inNext"] = @YES;
+                entry[@"realIndex"] = @(i);
+
+                // create a new album object and insert it into the recent section
+                if ([entry[@"inRecentSection"] boolValue]) {
+                    Album *album = [Album new];
+                    album.identifier = ident;
+
+                    _albumMap[ident] = album;
+                    [recentSection addAlbum:album];
+                }
             }
-        }
 
-        // iterate over the changes to the real album id order
-        for (NSString *ident in diff) {
-            NSMutableDictionary *entry = diff[ident];
-            Album *album = _albumMap[ident];
-            // [Logger logStringWithFormat:@"realIndex: %ld", album.realIndex];
-            
-            // remove any albums that no longer appear in the order
-            if ([entry[@"inLast"] boolValue] && ![entry[@"inNext"] boolValue]) {
-                [album.section removeAlbum:album];
-                [_albumMap removeObjectForKey:ident];
-            
-            // update the real index of any album that will be displayed
-            } else {
-                album.realIndex = [entry[@"realIndex"] integerValue];
+            // iterate over the changes to the real album id order
+            for (NSString *ident in diff) {
+                NSMutableDictionary *entry = diff[ident];
+                Album *album = _albumMap[ident];
+                // [Logger logStringWithFormat:@"realIndex: %ld", album.realIndex];
+                
+                // remove any albums that no longer appear in the order
+                if ([entry[@"inLast"] boolValue] && ![entry[@"inNext"] boolValue]) {
+                    [album.section removeAlbum:album];
+                    // [_albumMap removeObjectForKey:ident]; // TODO: removed this to fix a crash that was happening?? but not removing the album from the map shouldn't impact anything
+                
+                // update the real index of any album that will be displayed
+                } else {
+                    album.realIndex = [entry[@"realIndex"] integerValue];
+                }
+            }
+
+            // update the recently added view controller
+            if (_lravc) {
+                [_lravc reloadDataForAlbumUpdate];
             }
         }
     }
-
-    _processedRealAlbumOrder = YES;
-    [self updateIsReadyForUse];
 }
 
 // return YES if an album at a given index path is able to be shifted left/right
@@ -185,7 +229,7 @@
     // [self checkSectionVisibility];
     [self saveData];
 
-    [[MeloManager sharedInstance] dataChangeOccurred:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"MELO_NOTIFICATION_MANAGER_PINNING_DATA_UPDATED" object:self];
 }
 
 // removes an album with the given identifier from its section
@@ -348,16 +392,14 @@
     // clear any current data
     // if (!_skipLoad) {
 
+    // reset sections and albumpmap s
     _sections = [NSMutableArray array];
-    _processedRealAlbumOrder = NO;
     _albumMap = [NSMutableDictionary dictionary];
 
     NSString *userDefaultsKey = [self userDefaultsKey];
     MeloManager *meloManager = [MeloManager sharedInstance];
 
-    // NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
-    // NSString *localizedRecentlyAddedTitle = NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
-
+    // always use full library data when sync library pins is enabled
     if ([meloManager prefsBoolForKey:@"syncLibraryPinsEnabled"]) {
         userDefaultsKey = @"MELO_DATA_LIBRARY";
 
@@ -419,35 +461,15 @@
     // custom sections are disabled - check if a pinned section exists
     } else {
 
-        // [[Logger sharedInstance] logString:@"custom sections are disabled"];
-
-        // // create section and album objects
-        // if (data) {
-
-        //     // create section object for every loaded dictionary
-        //     for (int i = 0; i < [data count]; i++) {
-        //         Section *section = [[Section alloc] initWithDictionary:data[i]];
-        //         [_sections addObject:section];
-        //     }
-
-        //     // create empty recent section
-        //     Section *recentSection = [Section emptyRecentSection];
-        //     [_sections addObject:recentSection];
-        // } else {
-
-        //     // adding two sections for now...
-        //     [_sections addObject:[Section emptyPinnedSection]];
-        //     [_sections addObject:[Section emptyRecentSection]];
-        // }
-
+        // count any non recent sections 
         NSInteger numNonRecentSections = 0;
-
         for (Section *section in defaultsSections) {
             if (![@"MELO_RECENTLY_ADDED_SECTION" isEqualToString:section.identifier]) {
                 numNonRecentSections++;
             }
         }
 
+        // if non recent sections exist, add them, otherwise create a new empty pinned section
         if (numNonRecentSections == 0) {
             [finalSections addObject:[Section emptyPinnedSection]];
         } else {
@@ -508,10 +530,23 @@
 
     _albumIdentOrder = unorderedAlbumIds;
 
-    _attemptedDataLoad = YES;
-    [self updateIsReadyForUse];
-
     [[Logger sharedInstance] logString:@"done data load"];
+}
+
+// recreates the section order for pinned albums from saved data
+- (void)reloadPinnedAlbumOrder {
+
+    // load saved data
+    [self loadData];
+
+    // process the current results if they exist
+    LibraryRecentlyAddedViewController *lravc = [self lravc];
+    if (lravc) {
+        MPModelResponse *response = [lravc modelResponse];
+        if (response) {
+            [self checkAlbumResults:[response results]];
+        }
+    }
 }
 
 // adds or removes a fake insertion album in every section for wiggle mode

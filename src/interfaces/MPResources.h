@@ -51,8 +51,16 @@
 - (NSInteger)numberOfSections;
 @end
 
+@interface MPMediaLibraryConnectionAssertation : NSObject
+@property(strong, nonatomic) NSString *identifier;
+@end
+
 @interface MPModelResponse : NSObject
 @property(strong, nonatomic) MPSectionedCollection *results;
+@end
+
+@interface MPModelLibraryResponse : MPModelResponse
+@property(strong, nonatomic) MPMediaLibraryConnectionAssertation *libraryAssertion;
 @end
 
 @interface MPUFontDescriptor : NSObject

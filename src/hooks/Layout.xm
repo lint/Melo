@@ -294,6 +294,16 @@
 %hook LibraryRecentlyAddedViewController 
 %property(strong, nonatomic) NSDictionary *albumCellDisplayOptions;
 
+%new
+- (void)testDidChange:(id)arg1 {
+    [Logger logString:@"TEST DID CHANGE!!!!!!!!!!!!!!!!!!!!"];
+}
+
+%new
+- (void)testDidInvalidate:(id)arg1 {
+    [Logger logString:@"TEST DID INVALIDATE!!!!!!!!!!!!!!!!!!!!"];
+}
+
 // called once to initialize the view controller
 - (id)init {
 
@@ -312,6 +322,9 @@
 
     // add an observer for whenever a layout preferences change was detected
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLayoutPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LAYOUT" object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(testDidChange:) name:@"MPMediaLibraryDidChangeNotification" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(testDidInvalidate:) name:@"MPModelResponseDidInvalidateNotification" object:nil];
 }
 
 // return the album cell for a given index path

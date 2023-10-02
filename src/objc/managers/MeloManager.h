@@ -19,6 +19,7 @@
 @property(assign, nonatomic) CGSize collectionViewItemSize;
 @property(assign, nonatomic) CGSize otherPagesCollectionViewItemSize;
 @property(assign, nonatomic) CGFloat albumCellTextSpacing;
+@property(strong, nonatomic) NSMutableArray *temp;
 
 + (void)load;
 + (instancetype)sharedInstance;
@@ -36,6 +37,9 @@
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1;
 - (void)updateCollectionViewLayoutValues;
 - (NSDictionary *)albumCellDisplayDictForDataSource:(id)dataSource;
+
++ (NSString *)localizedRecentlyAddedTitle;
++ (NSString *)localizedDownloadedMusicTitle;
 
 - (void)handlePrefsChanged:(NSString *)arg1;
 @end

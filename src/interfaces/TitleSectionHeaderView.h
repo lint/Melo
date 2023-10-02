@@ -17,6 +17,7 @@
 @property(strong, nonatomic) NSString *identifier;
 @property(strong, nonatomic) UITapGestureRecognizer *tapGesture;
 @property(strong, nonatomic) LibraryRecentlyAddedViewController *recentlyAddedViewController;
+@property(assign, nonatomic) BOOL shouldApplyCollapseItems;
 
 // - (LibraryRecentlyAddedViewController *)recentlyAddedViewController;
 - (RecentlyAddedManager *)recentlyAddedManager;

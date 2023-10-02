@@ -43,6 +43,8 @@ static dispatch_function_t createSharedMeloManager() {
 
         [Logger logString:@"MeloManager - init"];
 
+        _temp = [NSMutableArray array];
+
 
         // NSArray *a1 = [NSArray arrayWithObjects:@"1", @"2", nil];
         // NSArray *a2 = [NSArray arrayWithObjects:@"0", @"1", @"2", nil];
@@ -172,7 +174,7 @@ static dispatch_function_t createSharedMeloManager() {
 
     }
 
-    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:notifName object:nil]];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:notifName object:self]];
 }
 
 
@@ -268,17 +270,6 @@ static dispatch_function_t createSharedMeloManager() {
     [_defaults setObject:prefsID forKey:clearPinsKey];
 }
 
-// inform other recently added managers if one of them made a change to the album order
-- (void)dataChangeOccurred:(RecentlyAddedManager *)sender {
-    for (RecentlyAddedManager *recentlyAddedManager in _recentlyAddedManagers) {
-
-        // do not notify the sending manager of the change or to any managers of different types (for full library vs downloaded music) when syncing is disabled enabled
-        if (recentlyAddedManager != sender && ([self prefsBoolForKey:@"syncLibraryPinsEnabled"] || recentlyAddedManager.isDownloadedMusic == sender.isDownloadedMusic)) {
-            recentlyAddedManager.unhandledDataChangeOccurred = YES;
-        }
-    }
-}
-
 // add a recently added manager to the array
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1 {
     if (![_recentlyAddedManagers containsObject:arg1]) {
@@ -309,6 +300,16 @@ static dispatch_function_t createSharedMeloManager() {
     display[@"shouldChangeFontSize"] = @(shouldChangeFontSize);
 
     return display;
+}
+
++ (NSString *)localizedRecentlyAddedTitle {
+    NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
+    return NSLocalizedStringFromTableInBundle(@"RECENTLY_ADDED_VIEW_TITLE", @"Music", bundle, nil);
+}
+
++ (NSString *)localizedDownloadedMusicTitle {
+    NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
+    return NSLocalizedStringFromTableInBundle(@"RECENTLY_DOWNLOADED_VIEW_TITLE", @"Music", bundle, nil);
 }
 
 @end

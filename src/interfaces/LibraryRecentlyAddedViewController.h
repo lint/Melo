@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 
 // forward declaration
-@class RecentlyAddedManager, WiggleModeManager, AnimationManager, AlbumActionsViewController;
+@class RecentlyAddedManager, WiggleModeManager, AnimationManager, AlbumActionsViewController, MPModelResponse;
 
 @interface LibraryRecentlyAddedViewController : UIViewController
 
@@ -11,7 +11,9 @@
 @property(strong, nonatomic) RecentlyAddedManager *recentlyAddedManager;
 @property(strong, nonatomic) AlbumActionsViewController *albumActionsVC;
 @property(strong, nonatomic) AnimationManager *animationManager;
-- (void)checkAlbumOrder;
+@property(assign, atomic) BOOL shouldInjectPinningData;
+- (MPModelResponse *)modelResponse;
+- (void)reloadDataForAlbumUpdate;
 - (void)handleActionMoveAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath toSection:(NSInteger)sectionIndex;
 - (void)handleActionShiftAlbumAtIndexPath:(NSIndexPath *)sourceAdjustedIndexPath movingLeft:(BOOL)isMovingLeft;
 - (void)moveAlbumCellFromAdjustedIndexPath:(NSIndexPath *)arg1 toAdjustedIndexPath:(NSIndexPath *)arg2 dataUpdateBlock:(void (^)())arg3;
@@ -22,6 +24,7 @@
 
 - (NSIndexPath *)collectionView:(UICollectionView *)collectionView targetIndexPathForMoveOfItemFromOriginalIndexPath:(NSIndexPath *)originalIndexPath 
     atCurrentIndexPath:(NSIndexPath *)currentIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath;
+
 
 // WiggleMode.xm
 - (void)endWiggleMode;

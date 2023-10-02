@@ -2,27 +2,28 @@
 #import <UIKit/UIKit.h>
 
 // forward declarations
-@class Album, Section;
+@class Album, Section, MPSectionedCollection, LibraryRecentlyAddedViewController;
 
 // manager class to inject album/section data for each LibraryRecentlyAddedViewController 
 @interface RecentlyAddedManager : NSObject
 @property(strong, nonatomic) NSMutableArray *sections;
 @property(strong, nonatomic) NSMutableDictionary *albumMap;
 @property(strong, nonatomic) NSArray *albumIdentOrder;
-@property(assign, nonatomic) BOOL processedRealAlbumOrder;
 @property(strong, nonatomic) NSUserDefaults *defaults;
-@property(assign, nonatomic) BOOL attemptedDataLoad;
 @property(assign, nonatomic) BOOL isDownloadedMusic;
 @property(assign, nonatomic) BOOL skipLoad;
-@property(assign, nonatomic) BOOL unhandledDataChangeOccurred;
-@property(assign, nonatomic) BOOL isReadyForUse;
 @property(assign, nonatomic) BOOL prefsDownloadedMusicEnabled;
+@property(strong, nonatomic) NSObject *albumProcessingLock;
+@property(weak, nonatomic) LibraryRecentlyAddedViewController *lravc;
 // @property(strong, nonatomic) NSLock 
 
 - (instancetype)init;
 - (NSIndexPath *)translateIndexPath:(NSIndexPath *)arg1;
+- (void)checkAlbumResults:(MPSectionedCollection *)results;
 - (void)processRealAlbumOrder:(NSArray *)arg1;
-- (void)updateIsReadyForUse;
+
+- (void)handleLibraryResponseResultsUpdate:(NSNotification *)arg1;
+- (void)handleOtherManagerPinningOrderUpdate:(NSNotification *)arg1;
 
 - (BOOL)canShiftAlbumAtAdjustedIndexPath:(NSIndexPath *)arg1 movingLeft:(BOOL)arg2;
 - (void)moveAlbumAtAdjustedIndexPath:(NSIndexPath *)sourceIndexPath toAdjustedIndexPath:(NSIndexPath *)destIndexPath;
@@ -40,6 +41,7 @@
 - (NSString *)userDefaultsKey;
 - (void)saveData;
 - (void)loadData;
+- (void)reloadPinnedAlbumOrder;
 - (void)updateFakeInsertionAlbums:(BOOL)shouldAdd;
 - (BOOL)shouldAllowDownloadedMusicContextMenu;
 @end
