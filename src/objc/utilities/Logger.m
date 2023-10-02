@@ -58,6 +58,7 @@ static dispatch_function_t createSharedLogger() {
 
         NSString *dateString = [formatter stringFromDate:[NSDate date]];
         _logFilePath = [NSString stringWithFormat:@"%@/%@_log.txt", _logFileDir, dateString];
+        // _logFilePath = [NSString stringWithFormat:@"%@/log.txt", _logFileDir];
 
         // lock object to provide synchronous writes to the log file
         // _lock = [NSObject new];
@@ -81,16 +82,20 @@ static dispatch_function_t createSharedLogger() {
         return;
     }
 
+    arg1 = [arg1 copy];
+
     @synchronized(self) {
 
         NSError *error = nil;
 
-        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss(SSS)"];
+        // NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        // [formatter setDateFormat:@"yyyy-MM-dd HH:mm:ss(SSS)"];
 
-        NSString *dateString = [formatter stringFromDate:[NSDate date]];
+        // NSString *dateString = [formatter stringFromDate:[NSDate date]];
 
-        NSString *newContents = [NSString stringWithFormat:@"%@[%@] %@\n", _contents, dateString, arg1];
+        // NSString *newContents = [NSString stringWithFormat:@"%@[%@] %@\n", _contents, dateString, arg1];
+        // NSString *newContents = [NSString stringWithFormat:@"%@[log] %@\n", _contents, arg1];
+        NSString *newContents = [[[_contents stringByAppendingString:@"[log] "] stringByAppendingString:arg1] stringByAppendingString:@"\n"];
         _contents = newContents;
         [_contents writeToFile:_logFilePath atomically:YES encoding:NSUTF8StringEncoding error:&error];
     }
@@ -102,6 +107,8 @@ static dispatch_function_t createSharedLogger() {
     if (!_enabled) {
         return;
     }
+
+    arg1 = [arg1 copy];
 
     va_list va;
     va_start(va, arg1);    
