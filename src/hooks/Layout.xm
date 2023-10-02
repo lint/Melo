@@ -467,6 +467,11 @@
         [self setShouldApplyCustomLayout:NO];
         return;
     }
+
+    // don't apply to JSGridViewController used to display a featured song/album at the top of an artist page
+    if (![[self parentViewController] isKindOfClass:objc_getClass("MusicApplication.JSVerticalStackViewModelViewController")]) {
+        return;
+    }
     
     MPModelResponse *response = MSHookIvar<MPModelResponse *>(self, "_modelResponse");
     if (!response) {
