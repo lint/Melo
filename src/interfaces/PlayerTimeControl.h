@@ -22,7 +22,7 @@
 @property(strong, nonatomic) id emptySetCopy;
 - (void)applyCustomSliderHeight;
 - (void)applyRoundedCorners;
-- (void)applyKnobConstaints;
+- (void)applyKnobConstaints:(BOOL)shouldHideKnob;
 - (void)createCustomTimeLabels;
 - (void)setKnobHidden:(BOOL)arg1;
 - (void)layoutCustomTimeLabels;

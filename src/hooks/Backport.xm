@@ -458,7 +458,7 @@
 
     if ([self shouldApplyCustomValues]) {
         
-        [self applyKnobConstaints];
+        [self applyKnobConstaints:YES];
         [self applyCustomSliderHeight];
         [self applyRoundedCorners];
         [self layoutCustomTimeLabels];
@@ -467,6 +467,7 @@
         [self setCustomTimeLabelsHidden:NO];
 
     } else {
+        [self applyKnobConstaints:NO];
         [self setStockTimeLabelsHidden:NO];
         [self setCustomTimeLabelsHidden:YES];
     }
@@ -475,10 +476,13 @@
 
 // change the size of the knob while scrubbing to allow it to go the full width of the slider
 %new
-- (void)applyKnobConstaints {
+- (void)applyKnobConstaints:(BOOL)shouldHideKnob {
     NSArray *constraints = MSHookIvar<NSArray *>(self, "trackingConstraints");
+
+    NSInteger constant = shouldHideKnob ? 0 : 32;
+
     for (NSLayoutConstraint *con in constraints) {
-        [con setConstant:0];
+        [con setConstant:constant];
     }
 }
 
