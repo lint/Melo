@@ -1,6 +1,6 @@
 
 #import "AnimationManager.h"
-#import "../utilities/utilities.h"
+#import "../objc_classes.h"
 #import "../../interfaces/interfaces.h"
 #import "WiggleModeManager.h"
 

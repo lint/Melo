@@ -3,7 +3,7 @@
 #import "../managers/managers.h"
 
 static Logger *sharedLogger;
-static dispatch_function_t createSharedLogger() {
+static void createSharedLogger(void *p) {
     sharedLogger = [Logger new];
 }
 
@@ -24,7 +24,7 @@ static dispatch_function_t createSharedLogger() {
 	// return sharedInstance;
 
     static dispatch_once_t onceToken;
-    dispatch_once_f(&onceToken, nil, createSharedLogger);
+    dispatch_once_f(&onceToken, nil, &createSharedLogger);
 
 	return sharedLogger;
 }

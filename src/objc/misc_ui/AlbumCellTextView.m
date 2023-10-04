@@ -2,6 +2,7 @@
 #import "AlbumCellTextView.h"
 #import "../utilities/utilities.h"
 #import "../../interfaces/interfaces.h"
+#import <substrate.h>
 
 @implementation AlbumCellTextView
 

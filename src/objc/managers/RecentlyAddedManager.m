@@ -1,10 +1,9 @@
 #import <UIKit/UIKit.h>
 #import "RecentlyAddedManager.h"
 #import "HBLog.h"
-#import "../reflection/reflection.h"
-#import "../utilities/utilities.h"
+#import "../objc_classes.h"
 #import "../../interfaces/interfaces.h"
-#import "MeloManager.h"
+#import <substrate.h>
 
 // should i synchronize access to the albums array with a mutex?
 
@@ -265,7 +264,7 @@
 // returns an array of all pinned albums
 - (NSArray *)pinnedAlbums {
 
-    NSMutableArray *albums = [NSMutableArray array];
+    NSArray *albums = [NSArray array];
 
     // iterate over every section except for the recent section (last in the array)
     for (NSInteger i = 0; i < [self numberOfSections] - 1; i++) {

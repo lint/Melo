@@ -10,14 +10,14 @@ export THEOS_PACKAGE_SCHEME = rootless
 
 # export THEOS_DEVICE_IP = 192.168.86.21
 export THEOS_DEVICE_IP = 10.0.0.231
-# export THEOS_DEVICE_IP = 10.5.18.63
+# export THEOS_DEVICE_IP = 10.5.9.225
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Melo
 
 Melo_FILES = src/hooks/main.xmi $(wildcard src/objc/*/*.m)
-Melo_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-everything
+Melo_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-deprecated-declarations 
 Melo_FRAMEWORKS += AudioToolbox
 
 include $(THEOS_MAKE_PATH)/tweak.mk

@@ -48,13 +48,13 @@
     // TODO: calling this method just crashes the app... allemand issue? since it's a class method with CGFloat which does something? idk
 
     NSInteger isNegMultiplier = arg1 < 0 ? -1 : 1;
-    CGFloat absArg = abs(arg1);
+    CGFloat absArg = fabs(arg1);
     CGFloat intPart = floor(absArg);
     CGFloat decPart = absArg - intPart;
     CGFloat roundedPart;
 
     // round the decimal to the nearest third
-    if (abs(decPart) < 0.0001) {
+    if (fabs(decPart) < 0.0001) {
         roundedPart = 0;
     } else if (decPart <= 1./3) {
         roundedPart = 1./3;

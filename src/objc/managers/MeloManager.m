@@ -3,9 +3,10 @@
 #import "RecentlyAddedManager.h"
 #import "../utilities/utilities.h"
 #import "../../interfaces/interfaces.h"
+#import <substrate.h>
 
 static MeloManager *sharedMeloManager;
-static dispatch_function_t createSharedMeloManager() {
+static void createSharedMeloManager(void *p) {
     sharedMeloManager = [MeloManager new];
 }
 
@@ -31,7 +32,7 @@ static dispatch_function_t createSharedMeloManager() {
     // return sharedInstance;
 
     static dispatch_once_t onceToken;
-    dispatch_once_f(&onceToken, nil, createSharedMeloManager);
+    dispatch_once_f(&onceToken, nil, &createSharedMeloManager);
 
 	return sharedMeloManager;
 }

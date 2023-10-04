@@ -919,7 +919,8 @@
     // placing all custom actions into a submenu
     UIMenu *subMenu = [UIMenu menuWithTitle:@"Melo Actions" image:[UIImage systemImageNamed:@"pin"] identifier:@"MELO_ACTION_SUBMENU" 
         options:[meloManager prefsBoolForKey:@"allActionsInSubmenuEnabled"] ? 0 : UIMenuOptionsDisplayInline children:actions];
-    return actions = @[subMenu];
+    
+    return @[subMenu];
 }
 
 %end

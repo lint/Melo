@@ -8,6 +8,7 @@
 %group BackportGroup
 
 %hook MusicNowPlayingControlsViewController
+%property(strong, nonatomic) UIView *test;
 
 // called when the music player view is loaded into memory
 - (void)viewDidLoad {
@@ -39,6 +40,14 @@
 
     // add an observer for whenever a backport preferences change was detected
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleBackportPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_BACKPORT" object:nil];
+
+    // // UIView *view = [self view];
+    // // MeloModernSlider *test = [[MeloModernSlider alloc] initWithFrame:CGRectMake(0, 0, view.bounds.size.width, view.bounds.size.height)];
+
+    // [self setTest:test];
+    // [timeControl addSubview:test];
+
+
 }
 
 // called whenever the music player is about to appear
@@ -53,6 +62,23 @@
         VolumeSlider *volumeSlider = MSHookIvar<VolumeSlider *>(self, "volumeSlider");
         [volumeSlider setStockImageViewsHidden:YES];
     }
+}
+
+- (void)viewDidAppear:(BOOL)arg1 {
+    %orig;
+
+
+}
+
+- (void)viewDidLayoutSubviews {
+
+    %orig;
+    // PlayerTimeControl *timeControl = (PlayerTimeControl *)MSHookIvar<UIControl *>(self, "timeControl");
+    // UIView *test = [self test];
+    // test.frame = CGRectMake(0, -40, timeControl.bounds.size.width, timeControl.bounds.size.height);
+    // [test setNeedsLayout];
+
+
 }
 
 // update the view when backport preferences were changed
@@ -812,12 +838,12 @@
     UIView *view = [self view];
 
     if ([view isKindOfClass:[UICollectionView class]]) {
-        return view;
+        return (UICollectionView *)view;
     }
 
     for (UIView *subview in [view subviews]) {
         if ([subview isKindOfClass:[UICollectionView class]]) {
-            return subview;
+            return (UICollectionView *)subview;
         }
     }
 
