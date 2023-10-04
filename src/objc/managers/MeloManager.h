@@ -19,7 +19,7 @@
 @property(assign, nonatomic) CGSize collectionViewItemSize;
 @property(assign, nonatomic) CGSize otherPagesCollectionViewItemSize;
 @property(assign, nonatomic) CGFloat albumCellTextSpacing;
-@property(strong, nonatomic) NSMutableArray *temp;
+@property(assign, nonatomic) BOOL shouldPreventLRAVCInit;
 
 + (void)load;
 + (instancetype)sharedInstance;

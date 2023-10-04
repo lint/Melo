@@ -44,19 +44,9 @@ static void createSharedMeloManager(void *p) {
 
         [Logger logString:@"MeloManager - init"];
 
-        _temp = [NSMutableArray array];
-
-
-        // NSArray *a1 = [NSArray arrayWithObjects:@"1", @"2", nil];
-        // NSArray *a2 = [NSArray arrayWithObjects:@"0", @"1", @"2", nil];
-        
-        // NSOrderedCollectionDifference *diff = [a2 differenceFromArray:nil];
-        // [Logger logStringWithFormat:@"insertions: %@", [diff insertions]];
-        // [Logger logStringWithFormat:@"removals: %@", [diff removals]];
-    
-
-
         [self loadPrefs];
+
+        _shouldPreventLRAVCInit = YES;
 
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         [Logger logStringWithFormat:@"defaults: %@", _defaults];

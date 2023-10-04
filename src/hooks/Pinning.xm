@@ -60,6 +60,7 @@
 
 %end
 
+
 // header views in the recently added sections
 %hook TitleSectionHeaderView
 %property(strong, nonatomic) UIImageView *chevronIndicatorView;
@@ -238,6 +239,13 @@
 
     [Logger logStringWithFormat:@"LRAVC: %p - init", self];
     
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    if (meloManager.shouldPreventLRAVCInit) {
+        meloManager.shouldPreventLRAVCInit = NO;
+        return %orig;
+    }
+
     RecentlyAddedManager *recentlyAddedManager = [RecentlyAddedManager new];
     WiggleModeManager *wiggleManager = [WiggleModeManager new];   
     AnimationManager *animationManager = [AnimationManager new]; 
@@ -249,12 +257,10 @@
     [self setAnimationManager:animationManager];
     [self setShouldInjectPinningData:NO];
 
-    id orig = %orig;
-
     // add an observer for whenever a pinning preferences change was detected
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePinningPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_PINNING" object:[MeloManager sharedInstance]];
     
-    return orig;
+    return %orig;
 }
 
 // helper method to access the model response ivar
@@ -327,7 +333,7 @@
     %orig;
     // [[self recentlyAddedManager] saveData];
 
-    if ([self wiggleModeManager].inWiggleMode) {
+    if ([self shouldInjectPinningData] && [self wiggleModeManager] && [self wiggleModeManager].inWiggleMode) {
         [self toggleWiggleMode];
     }
 }
@@ -359,7 +365,10 @@
         [[self recentlyAddedManager] setIsDownloadedMusic:YES];
     }
 
-    [[self recentlyAddedManager] loadData];
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    if (recentlyAddedManager) {
+        [recentlyAddedManager loadData];
+    }
 }
 
 // update the view when pinning preferences were changed
@@ -369,7 +378,9 @@
     RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     UICollectionView *collectionView = MSHookIvar<UICollectionView *>(self, "_collectionView");
 
-    [recentlyAddedManager loadData];
+    if (recentlyAddedManager) {
+        [recentlyAddedManager loadData];
+    }
     [collectionView reloadData];
 }
 
@@ -378,44 +389,41 @@
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)arg1 {
     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - numberOfSectionsInCollectionView:(%p)", self, arg1]];
 
-    // get the recently added manager
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     
-    // check if the manager is not ready to inject fake data
+    // check if ready to inject fake data
     if (![self shouldInjectPinningData]) {
         return %orig;
     }
     
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     return [recentlyAddedManager numberOfSections];
 }
 
 - (NSInteger)collectionView:(UICollectionView *)arg1 numberOfItemsInSection:(NSInteger)arg2 {
     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) numberOfItemsInSection:(%li)", self, arg1, arg2]];
 
-    // get the recently added manager
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    
-    // check if the manager is not ready to inject fake data
+    // check if ready to inject fake data
     if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
-    // return 0 if the section is collapsed, otherwise return the actual number of albums
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     Section *section = [recentlyAddedManager sectionAtIndex:arg2];
+
+    // return 0 if the section is collapsed, otherwise return the actual number of albums
     return section.isCollapsed ? 0 : [section numberOfAlbums];
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)arg1 viewForSupplementaryElementOfKind:(id)arg2 atIndexPath:(NSIndexPath *)arg3 {
     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) viewForSupplementaryElementOfKind:(%@) atIndexPath:<%ld-%ld>", self, arg1, arg2, arg3.section, arg3.item]];
     
-    // get the recently added manager
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
-    // check if the manager is not ready to inject fake data
+    // check if ready to inject fake data
     if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     Section *section = [recentlyAddedManager sectionAtIndex:arg3.section];
 
     UICollectionReusableView *orig = %orig;
@@ -446,9 +454,6 @@
 - (void)collectionView:(id)arg1 didEndDisplayingSupplementaryView:(id)arg2 forElementOfKind:(id)arg3 atIndexPath:(id)arg4 {
     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didEndDisplayingSupplementaryView:(%@) forElementOfKind:(%@) atIndexPath:<%@>", self, arg1, arg2, arg3, arg4]];
 
-    // get the recently added manager
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-
     // check if the manager is not ready to inject fake data
     if (![self shouldInjectPinningData]) {
         %orig;
@@ -465,11 +470,11 @@
 
     id orig;
 
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         orig = %orig;
     } else {
+        RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
         Album *album = [recentlyAddedManager albumAtAdjustedIndexPath:arg2];
         // NSIndexPath *realIndexPath = [recentlyAddedManager translateIndexPath:arg2];
         // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"realIndexPath:<%ld-%ld>", realIndexPath.section, realIndexPath.item]];
@@ -489,10 +494,7 @@
 - (id)collectionView:(UICollectionView *)arg1 contextMenuConfigurationForItemAtIndexPath:(NSIndexPath *)arg2 point:(CGPoint)arg3 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) contextMenuConfigurationForItemAtIndexPath:<%ld-%ld> point:(do later if needed)", self, arg1, arg2.section, arg2.item]];
 
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    MeloManager *meloManager = [MeloManager sharedInstance];
-
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         return %orig;
     
@@ -501,6 +503,9 @@
         [Logger logString:@"in wiggle mode, preventing context menu generation"];
         return nil;
     }
+
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
     // set index path override to prevent collection view crash
     meloManager.indexPathForContextMenuOverride = arg2;
@@ -558,12 +563,13 @@
     // i remember this fixing some crash, due to the system using the default index paths to request but not being able to properly translate them?
     // not really sure, but i bet it'll come up again..
     
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     NSIndexPath *adjustedIndexPath = [recentlyAddedManager translateIndexPath:arg3];
 
     // [[Logger sharedInstance] logString:[NSString stringWithFormat:@"adjustedIndexPath:<%ld-%ld>", adjustedIndexPath.section, adjustedIndexPath.item]];
@@ -587,8 +593,7 @@
     
     // in old code, this did not ever inject a different index path, it just called %orig, so maybe do that again here as well..
     
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         %orig;
         return;
@@ -602,13 +607,13 @@
 - (BOOL)collectionView:(UICollectionView *)arg1 shouldSelectItemAtIndexPath:(NSIndexPath *)arg2 { 
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) shouldSelectItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
 
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         return %orig;
     }
 
-    [[Logger sharedInstance] logStringWithFormat:@"realIndexPath: %@", [recentlyAddedManager translateIndexPath:arg2]];
+    // RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // [[Logger sharedInstance] logStringWithFormat:@"realIndexPath: %@", [recentlyAddedManager translateIndexPath:arg2]];
 
     // use injected data
     // BOOL orig = %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
@@ -634,13 +639,13 @@
 - (void)collectionView:(UICollectionView *)arg1 didSelectItemAtIndexPath:(NSIndexPath *)arg2 { 
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) didSelectItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
   
-    // check if recently added manager is ready to inject data
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
+    // check if ready to inject data
     if (![self shouldInjectPinningData]) {
         %orig;
         return;
     }
 
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
     [[Logger sharedInstance] logStringWithFormat:@"realIndexPath: %@", [recentlyAddedManager translateIndexPath:arg2]];
 
     // use injected data
@@ -650,16 +655,15 @@
 - (BOOL)collectionView:(UICollectionView *)arg1 shouldHighlightItemAtIndexPath:(NSIndexPath *)arg2 {
     [[Logger sharedInstance] logString:[NSString stringWithFormat:@"LRAVC: %p - collectionView:(%p) shouldHighlightItemAtIndexPath:<%ld-%ld>", self, arg1, arg2.section, arg2.item]];
     
-    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
-    
-    // check if recently added manager is ready to inject data
+    // check if is ready to inject data
     if (![self shouldInjectPinningData]) {
         return %orig;
-    } else if ([self wiggleModeManager].inWiggleMode) {
-        
-        // do not allow selection of albums while in wiggle mode
+    // do not allow selection of albums while in wiggle mode
+    } else if ([self wiggleModeManager].inWiggleMode) {    
         return NO;
     }
+
+    RecentlyAddedManager *recentlyAddedManager = [self recentlyAddedManager];
 
     // use injected data
     return %orig(arg1, [recentlyAddedManager translateIndexPath:arg2]);
