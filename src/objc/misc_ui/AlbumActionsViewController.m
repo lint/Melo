@@ -4,6 +4,7 @@
 #import "../../interfaces/interfaces.h"
 #import "../reflection/reflection.h"
 #import "../utilities/utilities.h"
+#import "MeloModernSlider.h"
 
 @implementation AlbumActionsViewController
 
@@ -137,6 +138,12 @@
 
         [_buttonMap setObject:button forKey:ident];   
     }
+
+    MeloModernSlider *testSlider = [[MeloModernSlider alloc] initWithFrame:CGRectMake((screenWidth - (buttonWidth * .80)) / 2, currButtonYOrigin, buttonWidth * .80, buttonHeight)];
+    [testSlider setImagesForMinImage:@"speaker.fill" maxImage:@"speaker.wave.3.fill"];
+    currButtonYOrigin += buttonOffset;
+    [_buttonMap setObject:testSlider forKey:@"TEST_SLIDER"];
+    [view addSubview:testSlider];
 }
 
 - (void)handleButtonPress:(UIButton *)sender {
