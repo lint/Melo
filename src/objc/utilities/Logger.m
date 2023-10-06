@@ -52,6 +52,12 @@ static void createSharedLogger(void *p) {
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
         _logFileDir = [paths firstObject];
 
+        // BOOL isDir;
+        // NSFileManager *fileManager= [NSFileManager defaultManager]; 
+        // if(![fileManager fileExistsAtPath:_logFileDir isDirectory:&isDir]) {
+        //     [fileManager createDirectoryAtPath:_logFileDir withIntermediateDirectories:YES attributes:nil error:NULL];
+        // }
+
         // use the current date and time as the file name
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         [formatter setDateFormat:@"yyyy-MM-dd_HH:mm:ss"];
