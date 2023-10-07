@@ -48,6 +48,25 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Library Settings</string>
+			<key>footerText</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>MELOLibraryListController</string>
+			<key>label</key>
+			<string>Library</string>
+			<key>iconImageName</key>
+			<string>book.fill</string>
+		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>Layout Settings</string>
 			<key>footerText</key>
 			<string></string>

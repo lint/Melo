@@ -45,6 +45,7 @@ static void createSharedMeloManager(void *p) {
         [Logger logString:@"MeloManager - init"];
 
         [self loadPrefs];
+        _shouldCrash = NO;
 
         _shouldPreventLRAVCInit = YES;
 
@@ -134,7 +135,11 @@ static void createSharedMeloManager(void *p) {
         @"newMusicPlayerEnabled": @NO,
         @"smallerPlaylistsViewCellsEnabled": @NO,
         @"customPlaylistCellHeightEnabled": @NO,
-        @"customPlaylistCellHeight": @50
+        @"customPlaylistCellHeight": @50,
+        @"libraryHooksEnabled": @YES,
+        @"recentlyViewedPagesEnabled": @NO,
+        @"recentlyViewedPagesLimitEnabled": @YES,
+        @"recentlyViewedPagesLimit": @5
     }];
 }
 
@@ -265,6 +270,11 @@ static void createSharedMeloManager(void *p) {
 - (void)addRecentlyAddedManager:(RecentlyAddedManager *)arg1 {
     if (![_recentlyAddedManagers containsObject:arg1]) {
         [_recentlyAddedManagers addObject:arg1];
+    }
+
+    if ([_recentlyAddedManagers count] >= 2) {
+        // [NSException raise:@"TEST EXCEPTION" format:@"test exception complete: %@", @"yay"];
+        _shouldCrash = YES;
     }
 }
 

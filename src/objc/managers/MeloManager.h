@@ -20,6 +20,9 @@
 @property(assign, nonatomic) CGSize otherPagesCollectionViewItemSize;
 @property(assign, nonatomic) CGFloat albumCellTextSpacing;
 @property(assign, nonatomic) BOOL shouldPreventLRAVCInit;
+@property(assign, nonatomic) BOOL shouldCrash;
+@property(strong, nonatomic) UIViewController *lastSongsViewController;
+@property(strong, nonatomic) id lastSongsNavItem;
 
 + (void)load;
 + (instancetype)sharedInstance;
