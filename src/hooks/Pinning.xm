@@ -326,6 +326,12 @@
 
     [[MeloManager sharedInstance] setCurrentLRAVC:self];
     %orig;
+
+    // TODO: fully remove this later
+    // if ([MeloManager sharedInstance].shouldCrash) {
+    //     NSArray *array = @[@"test"];
+    //     [Logger logStringWithFormat:@"test: %@", array[1]];
+    // }
 }
 
 - (void)viewWillDisappear:(BOOL)arg1 {
