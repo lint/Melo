@@ -23,6 +23,7 @@
 @property(assign, nonatomic) BOOL shouldCrash;
 @property(strong, nonatomic) UIViewController *lastSongsViewController;
 @property(strong, nonatomic) id lastSongsNavItem;
+@property(strong, nonatomic) NSMutableArray *tabsLastControllers;
 
 + (void)load;
 + (instancetype)sharedInstance;

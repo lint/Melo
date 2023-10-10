@@ -1,5 +1,6 @@
 @interface UIViewController ()
 - (id)contentScrollView;
+- (id)_vanillaInit;
 @end
 
 @interface UICollectionView ()
@@ -31,4 +32,8 @@
 - (id)_thumbViewNeue;
 - (id)_maxValueView;
 - (id)_minValueView;
+@end
+
+@interface UINavigationController () 
+- (void)pushViewController:(UIViewController *)arg1 transition:(int)arg2 forceImmediate:(BOOL)arg3;
 @end

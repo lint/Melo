@@ -48,6 +48,7 @@ static void createSharedMeloManager(void *p) {
         _shouldCrash = NO;
 
         _shouldPreventLRAVCInit = YES;
+        _tabsLastControllers = [NSMutableArray arrayWithArray:@[@[], @[], @[], @[], @[], @[]]];
 
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         [Logger logStringWithFormat:@"defaults: %@", _defaults];
