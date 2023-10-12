@@ -14,3 +14,4 @@
 #import "PlaylistsViewController.h"
 #import "PlaylistCell.h"
 #import "LibraryMenuDataSource.h"
+#import "LibraryMenuViewController.h"

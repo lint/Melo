@@ -7,7 +7,18 @@
 %group LibraryGroup 
 
 %hook LibraryMenuViewController
+%property(assign, nonatomic) BOOL shouldInjectCustomData;
 
+// default initializer
+- (id)init {
+    id orig = %orig;
+
+    [orig setShouldInjectCustomData:NO];
+
+    return orig;
+}
+
+// helper method to get the dataSource ivar
 %new
 - (id)dataSource {
     return MSHookIvar<id>(self, "dataSource");
@@ -24,10 +35,16 @@
     // [[self tableView] reloadData];
 }
 
+// handle selection of one of the rows in the menu
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 
     LibraryMenuDataSource *dataSource = [self dataSource];
     MeloManager *meloManager = [MeloManager sharedInstance];
+
+    if (![self shouldInjectCustomData]) {
+        %orig;
+        return;
+    }
     
     if (indexPath.row == [dataSource tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
 
@@ -116,34 +133,52 @@
 %hook UITabBarController
 
 - (void)transitionFromViewController:(id)arg1 toViewController:(id)arg2 {
-
     [Logger logStringWithFormat:@"UITabBarController transitionFromViewController:%@ toViewController:%@", arg1, arg2];
-    // %orig;
-
-    MeloManager *meloManager = [MeloManager sharedInstance];
-    NSMutableArray *data = meloManager.tabsLastControllers;
 
     if (!arg1) {
         %orig;
         return;
     }
 
-    NSInteger startIndex = [self.viewControllers indexOfObject:arg1];
-    NSInteger endIndex = [self.viewControllers indexOfObject:arg2];
+    MeloManager *meloManager = [MeloManager sharedInstance];
+    RecentlyViewedPageManager *recentlyViewedPageManager = meloManager.recentlyViewedPageManager;
 
+    // save the view controller stack of the navigation controller that was just left
     if ([arg1 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
-        data[startIndex] = [NSArray arrayWithArray:[arg1 viewControllers]];
+        [recentlyViewedPageManager addNavControllerToMap:arg1];
     }
 
-    // // data[startIndex] = [NSArray arrayWithArray:((UINavigationController *)arg1).viewControllers];
+    // load the view controllers stack of the navitation controller that is about to be shown
+    if ([arg2 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
 
-    if ([arg2 isKindOfClass:objc_getClass("MusicApplication.NavigationController")] && [data[endIndex] count] > 0) {
-        [arg2 setViewControllers:data[endIndex] animated:NO];
+        NSArray *viewControllers = [recentlyViewedPageManager viewControllersForMappedNavController:arg2];
+
+        // TODO: check if the navigation controllers saved stack includes a view controller that was pushed in another navigation controller?
+        // just so you don't always reset the view controllers list - possible performance hit
+
+        if (viewControllers) {
+            [arg2 setViewControllers:viewControllers animated:NO];
+        }
     }
 
     %orig;
 }
 
+
+%end
+
+%hook UINavigationController
+%property(strong, nonatomic) NSString *identifier;
+
+- (id)init {
+    
+    id orig = %orig;
+
+    NSString *ident = [[NSProcessInfo processInfo] globallyUniqueString];
+    [orig setIdentifier:ident];
+
+    return orig;
+}
 
 %end
 

@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 
 // forward declarations
-@class RecentlyAddedManager, LibraryRecentlyAddedViewController;
+@class RecentlyAddedManager, LibraryRecentlyAddedViewController, RecentlyViewedPageManager;
 
 // overall tweak manager class
 @interface MeloManager : NSObject
@@ -24,6 +24,7 @@
 @property(strong, nonatomic) UIViewController *lastSongsViewController;
 @property(strong, nonatomic) id lastSongsNavItem;
 @property(strong, nonatomic) NSMutableArray *tabsLastControllers;
+@property(strong, nonatomic) RecentlyViewedPageManager *recentlyViewedPageManager;
 
 + (void)load;
 + (instancetype)sharedInstance;

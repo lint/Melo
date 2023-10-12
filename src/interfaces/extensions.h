@@ -36,4 +36,7 @@
 
 @interface UINavigationController () 
 - (void)pushViewController:(UIViewController *)arg1 transition:(int)arg2 forceImmediate:(BOOL)arg3;
+
+// Library.xm
+@property(strong, nonatomic) NSString *identifier;
 @end

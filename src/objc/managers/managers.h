@@ -2,3 +2,4 @@
 #import "RecentlyAddedManager.h"
 #import "WiggleModeManager.h"
 #import "AnimationManager.h"
+#import "RecentlyViewedPageManager.h"
