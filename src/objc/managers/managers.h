@@ -3,3 +3,4 @@
 #import "WiggleModeManager.h"
 #import "AnimationManager.h"
 #import "RecentlyViewedPageManager.h"
+#import "LibraryMenuManager.h"

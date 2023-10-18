@@ -12,11 +12,6 @@ static void createSharedMeloManager(void *p) {
 
 @implementation MeloManager
 
-// - (int)test {
-//     int (^block)(void) = ^{return 100;};
-//     return block();
-// }
-
 // loads the object if you don't need to use it right away
 + (void)load {
     [self sharedInstance];
@@ -48,8 +43,6 @@ static void createSharedMeloManager(void *p) {
         _shouldCrash = NO;
 
         _shouldPreventLRAVCInit = YES;
-        _tabsLastControllers = [NSMutableArray arrayWithArray:@[@[], @[], @[], @[], @[], @[]]];
-        _recentlyViewedPageManager = [RecentlyViewedPageManager new];
 
         _defaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.lint.melo.data"];
         [Logger logStringWithFormat:@"defaults: %@", _defaults];

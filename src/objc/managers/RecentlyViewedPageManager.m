@@ -1,8 +1,28 @@
 
 #import "RecentlyViewedPageManager.h"
 #import "../../interfaces/interfaces.h"
+#import "MeloManager.h"
+
+static RecentlyViewedPageManager *sharedRecentlyViewedPageManager;
+static void createSharedRecentlyViewedPageManager(void *p) {
+    sharedRecentlyViewedPageManager = [RecentlyViewedPageManager new];
+}
 
 @implementation RecentlyViewedPageManager 
+
+// initialize the shared instance without obtaining a reference
++ (void)load {
+    [self sharedInstance];
+}
+
+// create a singleton instance
++ (instancetype)sharedInstance {
+
+    static dispatch_once_t onceToken;
+    dispatch_once_f(&onceToken, nil, &createSharedRecentlyViewedPageManager);
+
+	return sharedRecentlyViewedPageManager;
+}
 
 // default initializer
 - (instancetype)init {

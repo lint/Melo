@@ -40,3 +40,8 @@
 // Library.xm
 @property(strong, nonatomic) NSString *identifier;
 @end
+
+@interface NSUserDefaults ()
+@property(strong, nonatomic) NSArray *libraryMenuOrderedIdentifiers;
+@property(strong, nonatomic) NSSet *libraryMenuSelectedIdentifiers;
+@end

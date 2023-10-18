@@ -4,8 +4,11 @@
 @interface RecentlyViewedPageManager : NSObject
 @property(strong, nonatomic) NSMutableDictionary *navMap;
 @property(strong, nonatomic) NSMutableArray *albumQueue;
-@proprety(assign, nonatomic) NSInteger queueSizeLimit;
+@property(assign, nonatomic) NSInteger queueSizeLimit;
 @property(assign, nonatomic) BOOL shouldLimitQueues;
+
++ (void)load;
++ (instancetype)sharedInstance;
 
 - (void)addAlbumPageToQueue:(id)arg1;
 - (void)updateQueueConfigFromPrefs;

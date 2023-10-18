@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 
 // forward declarations
-@class RecentlyAddedManager, LibraryRecentlyAddedViewController, RecentlyViewedPageManager;
+@class RecentlyAddedManager, LibraryRecentlyAddedViewController;
 
 // overall tweak manager class
 @interface MeloManager : NSObject
@@ -21,10 +21,6 @@
 @property(assign, nonatomic) CGFloat albumCellTextSpacing;
 @property(assign, nonatomic) BOOL shouldPreventLRAVCInit;
 @property(assign, nonatomic) BOOL shouldCrash;
-@property(strong, nonatomic) UIViewController *lastSongsViewController;
-@property(strong, nonatomic) id lastSongsNavItem;
-@property(strong, nonatomic) NSMutableArray *tabsLastControllers;
-@property(strong, nonatomic) RecentlyViewedPageManager *recentlyViewedPageManager;
 
 + (void)load;
 + (instancetype)sharedInstance;

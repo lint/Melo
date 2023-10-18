@@ -13,7 +13,7 @@
 - (id)init {
     id orig = %orig;
 
-    [orig setShouldInjectCustomData:NO];
+    [orig setShouldInjectCustomData:YES]; // TODO: should default to NO until ready?
 
     return orig;
 }
@@ -26,35 +26,33 @@
 
 - (void)viewWillAppear:(BOOL)arg1 {
     %orig;
-
-    // id dataSource = MSHookIvar<id>(self, "dataSource");
-    // id diffDataSource = MSHookIvar<id>(dataSource, "_impl");
-
-    // [diffDataSource appendItemsWithIdentifiers:@[@"test"]];
-
-    // [[self tableView] reloadData];
 }
 
 // handle selection of one of the rows in the menu
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 
     LibraryMenuDataSource *dataSource = [self dataSource];
-    MeloManager *meloManager = [MeloManager sharedInstance];
+    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+    
+    NSInteger numberOfRows = [dataSource tableView:tableView numberOfRowsInSection:indexPath.section];
+    BOOL rowIsAddedPage = indexPath.row >= numberOfRows - [libraryMenuManager numberOfAddedPages];
 
-    if (![self shouldInjectCustomData]) {
+    // do not inject data if not ready or if the row is a stock page
+    if (![self shouldInjectCustomData] || !rowIsAddedPage) {
         %orig;
         return;
     }
+
+    // get the cell info for the given row
+    NSInteger addedPageIndex = numberOfRows - indexPath.row - 1;
+    NSMutableDictionary *pageInfo = libraryMenuManager.addedPages[addedPageIndex];
     
-    if (indexPath.row == [dataSource tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
+    if (pageInfo[@"viewController"]) {
 
-        UIViewController *lastSongsViewController = meloManager.lastSongsViewController;
-        
-        [[self navigationController] pushViewController:lastSongsViewController animated:YES];
-        [lastSongsViewController.navigationItem setRightBarButtonItems:meloManager.lastSongsNavItem animated:YES];
-
-    } else {
-        %orig;
+        // UIViewController *lastSongsViewController = meloManager.lastSongsViewController;
+        UIViewController *viewController = pageInfo[@"viewController"];
+        [[self navigationController] pushViewController:viewController animated:YES];
+        // [lastSongsViewController.navigationItem setRightBarButtonItems:meloManager.lastSongsNavItem animated:YES];
     }
 }
 
@@ -62,35 +60,74 @@
 %end
 
 %hook LibraryMenuDataSource
+%property(assign, nonatomic) BOOL shouldInjectCustomData;
 
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return %orig + 1;
+// default intializer
+- (id)init {
+
+    id orig = %orig;
+
+    [orig setShouldInjectCustomData:YES]; // TODO: should default to NO?
+
+    return orig;
 }
 
+// get the number of rows in the given section 
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+
+    // do not inject data if not ready
+    // if (![self shouldInjectCustomData]) {
+    //     return %orig;
+    // }
+
+    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+    return %orig + [libraryMenuManager numberOfAddedPages];
+}
+
+// get the table view cell for a given row in the library menu table view
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 
-    if (indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
-        // id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithReuseIdentifier:@"LibraryMenuViewController.Cell"];
-        id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LibraryMenuViewController.Cell"];
-        [cell setText:@"Show Last Viewed Album"];
+    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+    
+    NSInteger numberOfRows = [self tableView:tableView numberOfRowsInSection:indexPath.section];
+    // BOOL rowIsAddedPage = indexPath.row >= numberOfRows - [libraryMenuManager numberOfAddedPages];
+    BOOL rowIsStockPage = indexPath.row < numberOfRows - [libraryMenuManager numberOfAddedPages];
+    
+    // do not inject data if not ready or if the row is a stock page
+    // if (![self shouldInjectCustomData] || rowIsStockPage) {
+    //     return %orig;
+    // }
 
+    if (rowIsStockPage) {
+        return %orig;
+    }
+
+    NSInteger addedPageIndex = numberOfRows - indexPath.row;
+    addedPageIndex = 0;
+    NSDictionary *pageInfo = libraryMenuManager.addedPages[addedPageIndex];
+
+    // id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithReuseIdentifier:@"LibraryMenuViewController.Cell"];
+    id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LibraryMenuViewController.Cell"];
+    [cell setText:pageInfo[@"title"]];
+    [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
+
+    if (pageInfo[@"imageName"]) {
         // UIImageSymbolConfiguration *imageConfig = [UIImageSymbolConfiguration configurationWithPointSize:16 weight:UIImageSymbolWeightUnspecified scale:UIImageSymbolScaleDefault];
         UIImageSymbolConfiguration *imageConfig = [UIImageSymbolConfiguration configurationWithTextStyle:UIFontTextStyleTitle2 scale:UIImageSymbolScaleMedium];
-        UIImage *image = [UIImage systemImageNamed:@"clock.arrow.circlepath" withConfiguration:imageConfig];
+        UIImage *image = [UIImage systemImageNamed:pageInfo[@"imageName"] withConfiguration:imageConfig];
 
         MSHookIvar<UIImage *>(cell, "symbol") = image;
         MSHookIvar<UIImageView *>(cell, "symbolView").image = image;
-        [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
-
-        return cell;
-    } else {
-        return %orig;
     }
+
+    return cell;
 }
 
+// helper method to get the impl ivar
 %new 
 - (id)impl {
-    return MSHookIvar<id>(self, "_impl");
+    id impl = MSHookIvar<id>(self, "_impl");
+    return impl;
 }
 
 %end
@@ -98,34 +135,31 @@
 
 %hook ContainerDetailSongsViewController
 
-- (void)viewDidAppear:(BOOL)arg1 {
-    %orig;
+// - (void)viewDidAppear:(BOOL)arg1 {
+//     %orig;
 
-    UIViewController *controller = self;
-    UIViewController *parent;
-    BOOL foundNavController = NO;
+//     UIViewController *controller = self;
+//     UIViewController *parent;
+//     BOOL foundNavController = NO;
 
-    for (NSInteger i = 0; i < 10; i++) {
-        parent = [controller parentViewController];
+//     for (NSInteger i = 0; i < 10; i++) {
+//         parent = [controller parentViewController];
 
-        if ([parent isKindOfClass:[UINavigationController class]]) {
+//         if ([parent isKindOfClass:[UINavigationController class]]) {
             
-            // NSData *tempArchiveViewController = [NSKeyedArchiver archivedDataWithRootObject:controller];
-            // UIViewController *newController = [NSKeyedUnarchiver unarchiveObjectWithData:tempArchiveViewController];
+//             [MeloManager sharedInstance].lastSongsViewController = controller;
+//             [MeloManager sharedInstance].lastSongsNavItem = [NSArray arrayWithArray:controller.navigationItem.rightBarButtonItems];
+//             foundNavController = YES;
+//             break;
+//         }
 
-            [MeloManager sharedInstance].lastSongsViewController = controller;
-            [MeloManager sharedInstance].lastSongsNavItem = [NSArray arrayWithArray:controller.navigationItem.rightBarButtonItems];
-            foundNavController = YES;
-            break;
-        }
+//         controller = parent;
+//     }
 
-        controller = parent;
-    }
-
-    if (!foundNavController) {
-        [MeloManager sharedInstance].lastSongsViewController = self;
-    }
-}
+//     if (!foundNavController) {
+//         [MeloManager sharedInstance].lastSongsViewController = self;
+//     }
+// }
 
 %end
 
@@ -140,26 +174,25 @@
         return;
     }
 
-    MeloManager *meloManager = [MeloManager sharedInstance];
-    RecentlyViewedPageManager *recentlyViewedPageManager = meloManager.recentlyViewedPageManager;
+    // RecentlyViewedPageManager *recentlyViewedPageManager = [RecentlyViewedPageManager sharedInstance];
 
-    // save the view controller stack of the navigation controller that was just left
-    if ([arg1 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
-        [recentlyViewedPageManager addNavControllerToMap:arg1];
-    }
+    // // save the view controller stack of the navigation controller that was just left
+    // if ([arg1 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
+    //     [recentlyViewedPageManager addNavControllerToMap:arg1];
+    // }
 
-    // load the view controllers stack of the navitation controller that is about to be shown
-    if ([arg2 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
+    // // load the view controllers stack of the navitation controller that is about to be shown
+    // if ([arg2 isKindOfClass:objc_getClass("MusicApplication.NavigationController")]) {
 
-        NSArray *viewControllers = [recentlyViewedPageManager viewControllersForMappedNavController:arg2];
+    //     NSArray *viewControllers = [recentlyViewedPageManager viewControllersForMappedNavController:arg2];
 
-        // TODO: check if the navigation controllers saved stack includes a view controller that was pushed in another navigation controller?
-        // just so you don't always reset the view controllers list - possible performance hit
+    //     // TODO: check if the navigation controllers saved stack includes a view controller that was pushed in another navigation controller?
+    //     // just so you don't always reset the view controllers list - possible performance hit
 
-        if (viewControllers) {
-            [arg2 setViewControllers:viewControllers animated:NO];
-        }
-    }
+    //     if (viewControllers) {
+    //         [arg2 setViewControllers:viewControllers animated:NO];
+    //     }
+    // }
 
     %orig;
 }
@@ -174,6 +207,7 @@
     
     id orig = %orig;
 
+    // generate a unique identifier for each navigation controller
     NSString *ident = [[NSProcessInfo processInfo] globallyUniqueString];
     [orig setIdentifier:ident];
 
