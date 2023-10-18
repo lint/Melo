@@ -3,7 +3,6 @@
 
 @interface LibraryMenuManager : NSObject
 @property(strong, nonatomic) NSMutableArray *addedPages;
-@property(strong, nonatomic) 
 
 + (void)load;
 + (instancetype)sharedInstance;
