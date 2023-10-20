@@ -42,4 +42,6 @@
 + (NSString *)localizedDownloadedMusicTitle;
 
 - (void)handlePrefsChanged:(NSString *)arg1;
+// - (void)customSectionsInfo;
+- (NSArray *)customSectionsInfo;
 @end

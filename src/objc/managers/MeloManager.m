@@ -134,7 +134,8 @@ static void createSharedMeloManager(void *p) {
         @"libraryHooksEnabled": @YES,
         @"recentlyViewedPagesEnabled": @NO,
         @"recentlyViewedPagesLimitEnabled": @YES,
-        @"recentlyViewedPagesLimit": @5
+        @"recentlyViewedPagesLimit": @5,
+        @"visualizerPageEnabled": @NO
     }];
 }
 
@@ -306,6 +307,16 @@ static void createSharedMeloManager(void *p) {
 + (NSString *)localizedDownloadedMusicTitle {
     NSBundle *bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:@"%@%@", [[NSBundle mainBundle] bundlePath], @"/Frameworks/MusicApplication.framework"]];
     return NSLocalizedStringFromTableInBundle(@"RECENTLY_DOWNLOADED_VIEW_TITLE", @"Music", bundle, nil);
+}
+
+- (NSArray *)customSectionsInfo {
+    // [Logger logStringWithFormat:@"MELOMANAGER: %@", _prefs[@"customSectionsInfo"]];
+
+    if (!_prefs[@"customSectionsInfo"]) {
+        return nil;
+    }
+
+    return [NSArray arrayWithArray:_prefs[@"customSectionsInfo"]];
 }
 
 @end

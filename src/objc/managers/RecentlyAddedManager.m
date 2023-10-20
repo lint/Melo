@@ -411,8 +411,13 @@
     NSMutableArray *data = [_defaults objectForKey:userDefaultsKey];
 
     // load custom section information from preferences
-    NSArray *customSectionsInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customSectionsInfo"] ?: @[];
-    NSDictionary *customRecentlyAddedInfoFromPrefs = [[MeloManager sharedInstance] prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
+    // NSArray *customSectionsInfoFromPrefs = [meloManager prefsObjectForKey:@"customSectionsInfo"] ?: @[];
+    NSArray *customSectionsInfoFromPrefs = [meloManager customSectionsInfo];
+    NSDictionary *customRecentlyAddedInfoFromPrefs = [meloManager prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
+
+    [Logger logStringWithFormat:@"customSectionsInfoFromPrefs: %@", customSectionsInfoFromPrefs];
+    [Logger logStringWithFormat:@"prefs: %@", meloManager.prefs];
+    [Logger logStringWithFormat:@"prefs customSectionsInfo: %@", meloManager.prefs[@"customSectionsInfo"]];
 
     NSMutableArray *finalSections = [NSMutableArray array];
     NSMutableArray *defaultsSections = [NSMutableArray array];
@@ -430,19 +435,23 @@
     // custom sections are enabled - sync custom sections from prefs and user defaults
     if ([meloManager prefsBoolForKey:@"customSectionsEnabled"]) {
 
-        // [[Logger sharedInstance] logString:@"custom sections are enabled"];
+        [[Logger sharedInstance] logString:@"custom sections are enabled"];
 
         // iterate over every custom section loaded from preferences
         for (NSInteger i = 0; i < [customSectionsInfoFromPrefs count]; i++) {
 
             NSDictionary *sectionInfo = customSectionsInfoFromPrefs[i];
             BOOL foundSection = NO;
+
+            [Logger logStringWithFormat:@"sectionInfo: %@", sectionInfo];
             
             // iterate over every section loaded from defaults until a match is found
             for (Section *section in defaultsSections) {
                 if ([section.identifier isEqualToString:sectionInfo[@"identifier"]]) {
                     section.title = sectionInfo[@"title"];
                     section.subtitle = sectionInfo[@"subtitle"];
+
+                    [Logger logString:@"found saved section!"];
 
                     [finalSections addObject:section];
                     foundSection = YES;
@@ -452,6 +461,7 @@
 
             // no match found, meaning the section was not previously saved, create a new one
             if (!foundSection) {
+                [Logger logString:@"did not find saved section, creating new one"];
                 Section *section = [[Section alloc] initWithDictionary:sectionInfo];
                 [finalSections addObject:section];
             }
@@ -475,6 +485,8 @@
             [finalSections addObjectsFromArray:defaultsSections];
         }
     }
+
+    [Logger logStringWithFormat:@"final sections (pre recent): %@", finalSections];
 
     // get the section object for the recently added section
     Section *recentSection;
