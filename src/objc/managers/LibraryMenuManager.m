@@ -1,6 +1,8 @@
 
 #import "LibraryMenuManager.h"
 #import "../ui/ui.h"
+#import "VisualizerManager.h"
+#import "MeloManager.h"
 
 static LibraryMenuManager *sharedLibraryMenuManager;
 static void createSharedLibraryMenuManager(void *p) {
@@ -29,6 +31,9 @@ static void createSharedLibraryMenuManager(void *p) {
     if ((self = [super init])) {
         _addedPages = [NSMutableArray array];
 
+        // _test = [NSMutableArray array];
+        _visualizerManager = [VisualizerManager new];
+
         // needs to be done on the main thread due to creating new view controllers
         [self performSelectorOnMainThread:@selector(setupCustomPages) withObject:nil waitUntilDone:NO];
     }
@@ -39,7 +44,15 @@ static void createSharedLibraryMenuManager(void *p) {
 // add custom pages to the added pages array
 - (void)setupCustomPages {
 
-    [self addNewPageWithIdent:@"MELO_PAGE_RECENTLY_VIEWED" title:@"Show Last Viewed Album" imageName:@"clock.arrow.circlepath" viewController:[RecentlyViewedPageViewController new]];
+    MeloManager *meloManager = [MeloManager sharedInstance];
+
+    if ([meloManager prefsBoolForKey:@"recentlyViewedPagesEnabled"]) {
+        [self addNewPageWithIdent:@"MELO_PAGE_RECENTLY_VIEWED" title:@"Show Last Viewed Album" imageName:@"clock.arrow.circlepath" viewController:[RecentlyViewedPageViewController new]];
+    }
+
+    if ([meloManager prefsBoolForKey:@"visualizerPageEnabled"]) {
+        [self addNewPageWithIdent:@"MELO_PAGE_VISUALIZER" title:@"Visualizer" imageName:@"waveform" viewController:[VisualizerViewController new]];
+    }
 }
 
 // return the number of pages added to the library menu

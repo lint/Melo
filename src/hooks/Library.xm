@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <Accelerate/Accelerate.h>
 #import "hooks.h"
 #import "../objc/objc_classes.h"
 #import "../interfaces/interfaces.h"
@@ -44,7 +45,7 @@
     }
 
     // get the cell info for the given row
-    NSInteger addedPageIndex = numberOfRows - indexPath.row - 1;
+    NSInteger addedPageIndex = [libraryMenuManager numberOfAddedPages] - (numberOfRows - indexPath.row);
     NSMutableDictionary *pageInfo = libraryMenuManager.addedPages[addedPageIndex];
     
     if (pageInfo[@"viewController"]) {
@@ -102,11 +103,9 @@
         return %orig;
     }
 
-    NSInteger addedPageIndex = numberOfRows - indexPath.row;
-    addedPageIndex = 0;
+    NSInteger addedPageIndex = [libraryMenuManager numberOfAddedPages] - (numberOfRows - indexPath.row);
     NSDictionary *pageInfo = libraryMenuManager.addedPages[addedPageIndex];
 
-    // id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithReuseIdentifier:@"LibraryMenuViewController.Cell"];
     id cell = [[objc_getClass("_TtCC16MusicApplication25LibraryMenuViewController4Cell") alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"LibraryMenuViewController.Cell"];
     [cell setText:pageInfo[@"title"]];
     [cell setAccessoryType:UITableViewCellAccessoryDisclosureIndicator];
@@ -169,10 +168,10 @@
 - (void)transitionFromViewController:(id)arg1 toViewController:(id)arg2 {
     [Logger logStringWithFormat:@"UITabBarController transitionFromViewController:%@ toViewController:%@", arg1, arg2];
 
-    if (!arg1) {
-        %orig;
-        return;
-    }
+    // if (!arg1) {
+    //     %orig;
+    //     return;
+    // }
 
     // RecentlyViewedPageManager *recentlyViewedPageManager = [RecentlyViewedPageManager sharedInstance];
 
@@ -212,6 +211,47 @@
     [orig setIdentifier:ident];
 
     return orig;
+}
+
+%end
+
+
+%hook MPCPlaybackEngine
+
+// TODO: is this needed? check if there are any cases where this would be set to NO (playing a song had it set to yes? but idk)
+- (BOOL)isAudioAnalyzerEnabled {
+    return YES;
+}
+
+%end
+
+%hook MPCAudioSpectrumAnalyzer
+
+- (void)_analyzeSamples:(AudioBufferList *)bufferList numberFrames:(NSInteger)numFrames {
+
+    // [Logger logStringWithFormat:@"number of frames: %ld, bufferList: %p, number of buffers: %ld", numFrames, bufferList, bufferList->mNumberBuffers];
+    %orig;
+
+    // TODO: don't always do your analyzing of the data, do a check with prefs
+
+    if ([[MeloManager sharedInstance] prefsBoolForKey:@"visualizerPageEnabled"]) {
+        LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+        [libraryMenuManager.visualizerManager processAudioBuffers:bufferList numberFrames:numFrames];
+    }
+}
+
+- (void)configurePlayerItem:(id)arg1 {
+    %orig;
+
+    // [Logger logStringWithFormat:@"configure player item: %@", arg1];
+}
+
+- (void)_prepareTap:(id)arg1 maxFrames:(NSInteger)arg2 processingFormat:(const AudioStreamBasicDescription *)arg3 {
+    %orig;
+
+    // [Logger logStringWithFormat:@"PREPARE TAP!! mBytesPerFrame: %ld", arg3->mBytesPerFrame];
+    // [Logger logStringWithFormat:@"sizeof(int): %ld, sizeof(float): %ld, sizeof(short): %ld, sizeof(NSInteger): %ld, sizeof(CGFloat): %ld", sizeof(int), sizeof(float), sizeof(short), sizeof(NSInteger), sizeof(CGFloat)];
+    // [Logger logStringWithFormat:@"isFloatFlag: %i, isBigEndian: %i, signedInt: %i", arg3->mFormatFlags & kAudioFormatFlagIsFloat, arg3->mFormatFlags & kAudioFormatFlagIsBigEndian,  arg3->mFormatFlags & kAudioFormatFlagIsSignedInteger];
 }
 
 %end
