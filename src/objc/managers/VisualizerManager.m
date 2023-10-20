@@ -1,6 +1,6 @@
 
 #import "VisualizerManager.h"
-
+#import "MeloManager.h"
 
 @implementation VisualizerManager
 
@@ -11,14 +11,17 @@
 
         _sampleCount = 4096;
         _hasFFTSetup = NO;
-        _numOutputBins = 16;
+        // _numOutputBins = 16;
+        _numOutputBins = [[MeloManager sharedInstance] prefsIntForKey:@"visualizerNumBars"];
 
         _outputData = calloc(_numOutputBins, sizeof(float));
         _overallMaxBinValue = 0;
 
         _nextRecentOutputIndex = 0;
-        _numRecentMaxesTracked = 10;
+        _numRecentMaxesTracked = 12 * 15; // covers approximately n seconds where = (12 * n)
         _recentOutputMaxes = calloc(_numRecentMaxesTracked, sizeof(float));
+
+        _isVisualizerActive = NO;
 
         [self initFFT];
     }
@@ -57,6 +60,11 @@
 - (void)processAudioBuffers:(AudioBufferList *)bufferList numberFrames:(NSInteger)numFrames {
 
     @synchronized(self) {
+        
+        // do not process audio if visualizer is not active
+        if (!_isVisualizerActive) {
+            return;
+        }
 
         // TODO: when would this not be the case?
         if (bufferList->mNumberBuffers != 2) {

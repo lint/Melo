@@ -135,7 +135,11 @@ static void createSharedMeloManager(void *p) {
         @"recentlyViewedPagesEnabled": @NO,
         @"recentlyViewedPagesLimitEnabled": @YES,
         @"recentlyViewedPagesLimit": @5,
-        @"visualizerPageEnabled": @NO
+        @"visualizerPageEnabled": @NO,
+        @"visualizerBarSpacing": @4,
+        @"visualizerNumBars": @16,
+        @"visualizerAnimateAlphaEnabled": @NO,
+        @"visualizerCenterBarsEnabled": @NO
     }];
 }
 

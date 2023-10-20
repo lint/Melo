@@ -47,6 +47,78 @@
 			<key>label</key>
 			<string>Visualizer Page Enabled</string>
 		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>4</integer>
+			<key>min</key>
+			<integer>0</integer>
+			<key>max</key>
+			<integer>20</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/library.updated</string>
+			<key>key</key>
+			<string>visualizerBarSpacing</string>
+			<key>label</key>
+			<string>Bar Spacing</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>MELOSliderCell</string>
+			<key>default</key>
+			<integer>16</integer>
+			<key>min</key>
+			<integer>1</integer>
+			<key>max</key>
+			<integer>512</integer>
+			<key>showValue</key>
+			<true/>
+			<key>integersOnly</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/library.updated</string>
+			<key>key</key>
+			<string>visualizerNumBars</string>
+			<key>label</key>
+			<string>Num Bars</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/library.updated</string>
+			<key>key</key>
+			<string>visualizerAnimateAlphaEnabled</string>
+			<key>label</key>
+			<string>Animate Alpha</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/library.updated</string>
+			<key>key</key>
+			<string>visualizerCenterBarsEnabled</string>
+			<key>label</key>
+			<string>Center Bars</string>
+		</dict>
 
 		<dict>
 			<key>cell</key>

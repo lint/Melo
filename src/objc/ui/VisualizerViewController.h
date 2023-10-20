@@ -1,7 +1,12 @@
 
 #import <UIKit/UIKit.h>
 
-@interface VisualizerViewController : UIViewController
+@interface VisualizerViewController : UIViewController {
+// @property(assign, nonatomic) NSTimeInterval updateInterval;
+    NSTimeInterval _updateInterval; // TODO: change back to property (causing crash cause of allemand...)
+}
+
+
 @property(strong, nonatomic) NSTimer *updateTimer;
 @property(strong, nonatomic) UILabel *testLabel;
 @property(strong, nonatomic) NSMutableArray *vizBarViews;

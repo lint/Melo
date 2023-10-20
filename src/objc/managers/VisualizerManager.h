@@ -17,6 +17,7 @@
 @property(assign, nonatomic) float overallMaxBinValue;
 @property(assign, nonatomic) NSInteger numRecentMaxesTracked;
 @property(assign, nonatomic) NSInteger nextRecentOutputIndex;
+@property(assign, nonatomic) BOOL isVisualizerActive;
 - (void)initFFT;
 - (void)processAudioBuffers:(AudioBufferList *)bufferList numberFrames:(NSInteger)numFrames;
 - (float)valueForBin:(NSInteger)arg1;

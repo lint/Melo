@@ -252,6 +252,7 @@
     // [Logger logStringWithFormat:@"PREPARE TAP!! mBytesPerFrame: %ld", arg3->mBytesPerFrame];
     // [Logger logStringWithFormat:@"sizeof(int): %ld, sizeof(float): %ld, sizeof(short): %ld, sizeof(NSInteger): %ld, sizeof(CGFloat): %ld", sizeof(int), sizeof(float), sizeof(short), sizeof(NSInteger), sizeof(CGFloat)];
     // [Logger logStringWithFormat:@"isFloatFlag: %i, isBigEndian: %i, signedInt: %i", arg3->mFormatFlags & kAudioFormatFlagIsFloat, arg3->mFormatFlags & kAudioFormatFlagIsBigEndian,  arg3->mFormatFlags & kAudioFormatFlagIsSignedInteger];
+    [Logger logStringWithFormat:@"SAMPLE RATE: %lf", arg3->mSampleRate];
 }
 
 %end
