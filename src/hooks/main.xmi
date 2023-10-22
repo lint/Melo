@@ -34,7 +34,7 @@ static void backportPrefsChangedCallback() {
 
 // callback method for when a change in library preferences was detected
 static void libraryPrefsChangedCallback() {
-    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/backport.updated"];
+    [[MeloManager sharedInstance] handlePrefsChanged:@"com.lint.melo.prefs/library.updated"];
 }
 
 

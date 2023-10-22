@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <AppKit/AppKit.h>
 #import <Accelerate/Accelerate.h>
 #import "hooks.h"
 #import "../objc/objc_classes.h"
@@ -253,6 +254,174 @@
     // [Logger logStringWithFormat:@"sizeof(int): %ld, sizeof(float): %ld, sizeof(short): %ld, sizeof(NSInteger): %ld, sizeof(CGFloat): %ld", sizeof(int), sizeof(float), sizeof(short), sizeof(NSInteger), sizeof(CGFloat)];
     // [Logger logStringWithFormat:@"isFloatFlag: %i, isBigEndian: %i, signedInt: %i", arg3->mFormatFlags & kAudioFormatFlagIsFloat, arg3->mFormatFlags & kAudioFormatFlagIsBigEndian,  arg3->mFormatFlags & kAudioFormatFlagIsSignedInteger];
     [Logger logStringWithFormat:@"SAMPLE RATE: %lf", arg3->mSampleRate];
+}
+
+%end
+
+%hook MusicNowPlayingControlsViewController
+%property(strong, nonatomic) VisualizerView *vizView;
+%property(assign, nonatomic) BOOL shouldShowVizView;
+
+- (id)init {
+
+    id orig = %orig;
+
+    return orig;
+}
+
+- (void)viewDidLoad {
+    %orig;
+    
+
+    BOOL shouldShowVizView = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
+    [self setShouldShowVizView:shouldShowVizView];
+
+    VisualizerView *vizView = [[VisualizerView alloc] initWithFrame:CGRectZero];
+    
+    vizView.userInteractionEnabled = NO;
+    vizView.hidden = !shouldShowVizView;
+
+    [self setVizView:vizView];
+    [[self view] addSubview:vizView];
+
+        // VisualizerView *vizView = [self vizView];
+    // UIView *titleContainer = MSHookIvar<UIView *>(self, "topContainerView");
+    // UIView *artworkView = MSHookIvar<UIView *>(self, "artworkView");
+    // UIView *timeControl = MSHookIvar<UIView *>(self, "timeControl");
+
+    // UILayoutGuide *vizLayoutGuide = [UILayoutGuide new];
+
+    // /*NSLayoutConstraint *topConstraint =*/ [vizView.topAnchor constraintEqualToAnchor:artworkView.bottomAnchor].active = YES;
+//    /* NSLayoutConstraint *bottomConstraint =*/ [titleContainer.layoutMarginsGuide.topAnchor constraintEqualToAnchor:vizView.bottomAnchor].active = YES;
+    
+    // [vizView addConstraint:topConstraint];
+    // [vizView addConstraint:bottomConstraint];
+    // [vizView addLayoutGuide:vizLayoutGuide];
+
+    // [NSLayoutConstraint 
+    //     constraintWithItem:vizView 
+    //     attribute:NSLayoutAttributeWidth
+    //     relatedBy:NSLayoutRelationEqual
+    //     toItem:timeControl
+    //     attribute:NSLayoutAttributeWidth
+    //     multiplier:1
+    //     constant:0
+    // ].active = YES;
+
+    // [NSLayoutConstraint 
+    //     constraintWithItem:vizView 
+    //     attribute:NSLayoutAttributeHeight
+    //     relatedBy:NSLayoutRelationEqual
+    //     toItem:timeControl
+    //     attribute:NSLayoutAttributeHeight
+    //     multiplier:1
+    //     constant:0
+    // ].active = YES;
+    // [vizView addConstraint:topConstraint];
+    // [vizView addConstraint:bottomConstraint];
+    // [vizView addConstraint:vizWidthConstraint];
+    // vizWidthConstraint.active = YES;
+    
+
+    // add an observer for whenever a library preferences change was detected
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleLibraryPrefsUpdate:) name:@"MELO_NOTIFICATION_PREFS_UPDATED_LIBRARY" object:nil];
+}
+
+- (void)viewWillAppear:(BOOL)arg1 {
+    %orig;
+
+    if (![self shouldShowVizView]) {
+        return;
+    }
+
+    [self layoutVizView];
+}
+
+- (void)viewDidAppear:(BOOL)arg1 {
+    %orig;
+
+    if (![self shouldShowVizView]) {
+        return;
+    }
+
+    VisualizerView *vizView = [self vizView];
+
+    NSDictionary *context = @{
+        @"vizView": vizView,
+    };
+
+    [UIView beginAnimations:@"MELO_ANIMATION_ANIMATE_MUSIC_PLAYER_VISUALIZER" context:(__bridge_retained void *)context];
+    [UIView setAnimationDuration:0.2];
+    [UIView setAnimationDelegate:[AnimationManager new]];
+    [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+    // [UIView setAnimationBeginsFromCurrentState:YES];
+
+    vizView.alpha = 1;
+
+    [UIView commitAnimations];
+
+    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+    VisualizerManager *visualizerManager = libraryMenuManager.visualizerManager;
+    visualizerManager.numVisualizersActive++;
+}
+
+- (void)viewDidDisappear:(BOOL)arg1 {
+    %orig;
+
+    [[self vizView] invalidateUpdateTimer];
+    [self vizView].alpha = 0;
+
+    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
+    VisualizerManager *visualizerManager = libraryMenuManager.visualizerManager;
+    visualizerManager.numVisualizersActive--;
+}
+
+- (void)viewDidLayoutSubviews {
+    %orig;
+
+    if (![self shouldShowVizView]) {
+        return;
+    }
+    
+    [self layoutVizView];
+}
+
+%new 
+- (void)layoutVizView {
+    VisualizerView *vizView = [self vizView];
+    UIView *titleContainer = MSHookIvar<UIView *>(self, "topContainerView");
+    UIView *artworkView = MSHookIvar<UIView *>(self, "artworkView");
+    UIView *timeControl = MSHookIvar<UIView *>(self, "timeControl");
+
+    CGRect vizFrame = CGRectMake(
+        timeControl.frame.origin.x,
+        artworkView.frame.origin.y + artworkView.frame.size.height,
+        timeControl.frame.size.width,
+        titleContainer.frame.origin.y - (artworkView.frame.origin.y + artworkView.frame.size.height) + 10
+    );
+
+    vizView.frame = vizFrame;
+}
+
+%new
+- (void)handleLibraryPrefsUpdate:(NSNotification *)arg1 {
+
+    VisualizerView *vizView = [self vizView];
+    BOOL newShouldShowViz = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
+
+    if (newShouldShowViz != [self shouldShowVizView]) {
+        [self setShouldShowVizView:newShouldShowViz];
+
+        if (newShouldShowViz) {
+            [vizView startUpdateTimer];
+        } else {
+            [vizView invalidateUpdateTimer];
+        }
+
+        vizView.hidden = !newShouldShowViz;
+
+        [[self view] setNeedsLayout];
+    }
 }
 
 %end

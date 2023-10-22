@@ -139,7 +139,8 @@ static void createSharedMeloManager(void *p) {
         @"visualizerBarSpacing": @4,
         @"visualizerNumBars": @16,
         @"visualizerAnimateAlphaEnabled": @NO,
-        @"visualizerCenterBarsEnabled": @NO
+        @"visualizerCenterBarsEnabled": @NO,
+        @"visualizerShowInMusicPlayerEnabled": @NO
     }];
 }
 
@@ -168,6 +169,9 @@ static void createSharedMeloManager(void *p) {
     } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/backport.updated"]) {
         notifName = [notifName stringByAppendingString:@"_BACKPORT"];
 
+    // library preferences were updated
+    } else if ([arg1 isEqualToString:@"com.lint.melo.prefs/library.updated"]) {
+        notifName = [notifName stringByAppendingString:@"_LIBRARY"];
     }
 
     [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:notifName object:self]];

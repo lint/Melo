@@ -3,3 +3,4 @@
 #import "MeloModernSlider.h"
 #import "RecentlyViewedPageViewController.h"
 #import "VisualizerViewController.h"
+#import "VisualizerView.h"

@@ -29,9 +29,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Visualizer Page</string>
+			<string>Visualizer</string>
 			<key>footerText</key>
-			<string>Adds a page to the library where you can view a music visualizer for the current song.</string>
+			<string></string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -46,6 +46,20 @@
 			<string>visualizerPageEnabled</string>
 			<key>label</key>
 			<string>Visualizer Page Enabled</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.lint.melo.prefs</string>
+			<key>PostNotification</key>
+			<string>com.lint.melo.prefs/library.updated</string>
+			<key>key</key>
+			<string>visualizerShowInMusicPlayerEnabled</string>
+			<key>label</key>
+			<string>Show in Music Player</string>
 		</dict>
 		<dict>
 			<key>cellClass</key>
