@@ -45,3 +45,7 @@
 @property(strong, nonatomic) NSArray *libraryMenuOrderedIdentifiers;
 @property(strong, nonatomic) NSSet *libraryMenuSelectedIdentifiers;
 @end
+
+// @interface NSValue ()
+// + (NSValue *)valueWithBytes:(const void *)value objCType:(const char *)type;
+// @end                   

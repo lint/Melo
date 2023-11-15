@@ -5,7 +5,7 @@
 @class VisualizerManager;
 
 @interface LibraryMenuManager : NSObject
-@property(strong, nonatomic) VisualizerManager *visualizerManager;
+// @property(strong, nonatomic) VisualizerManager *visualizerManager;
 @property(strong, nonatomic) NSMutableArray *addedPages;
 @property(strong, nonatomic) NSMutableArray *test; // TODO: instant crash if i remove this line.. allemand bug i believe
 

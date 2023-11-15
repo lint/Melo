@@ -46,7 +46,7 @@
 // process the notification for when library results are finalized
 - (void)handleLibraryResponseResultsUpdate:(NSNotification *)arg1 {
 
-    [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleLibraryResponseResultsUpdate: %@", self, arg1];
+    // [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleLibraryResponseResultsUpdate: %@", self, arg1];
 
     NSString *ident = arg1.userInfo[@"identifier"];
     MPSectionedCollection *results = arg1.userInfo[@"results"];
@@ -64,7 +64,7 @@
 // process the notification for when another recently added manager updates the pinning data
 - (void)handleOtherManagerPinningOrderUpdate:(NSNotification *)arg1 {
 
-    [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleOtherManagerPinningOrderUpdate: %@", self, arg1];
+    // [Logger logStringWithFormat:@"RecentlyAddedManager: %p handleOtherManagerPinningOrderUpdate: %@", self, arg1];
     MeloManager *meloManager = [MeloManager sharedInstance];
 
     // do not update if notification is coming from this manager or if syncing is disabled and the update is from a different type (recently added vs downloaded)
@@ -416,8 +416,8 @@
     NSDictionary *customRecentlyAddedInfoFromPrefs = [meloManager prefsObjectForKey:@"customRecentlyAddedInfo"] ?: @{};
 
     [Logger logStringWithFormat:@"customSectionsInfoFromPrefs: %@", customSectionsInfoFromPrefs];
-    [Logger logStringWithFormat:@"prefs: %@", meloManager.prefs];
-    [Logger logStringWithFormat:@"prefs customSectionsInfo: %@", meloManager.prefs[@"customSectionsInfo"]];
+    // [Logger logStringWithFormat:@"prefs: %@", meloManager.prefs];
+    // [Logger logStringWithFormat:@"prefs customSectionsInfo: %@", meloManager.prefs[@"customSectionsInfo"]];
 
     NSMutableArray *finalSections = [NSMutableArray array];
     NSMutableArray *defaultsSections = [NSMutableArray array];

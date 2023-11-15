@@ -296,12 +296,12 @@
 
 %new
 - (void)testDidChange:(id)arg1 {
-    [Logger logString:@"TEST DID CHANGE!!!!!!!!!!!!!!!!!!!!"];
+    // [Logger logString:@"TEST DID CHANGE!!!!!!!!!!!!!!!!!!!!"];
 }
 
 %new
 - (void)testDidInvalidate:(id)arg1 {
-    [Logger logString:@"TEST DID INVALIDATE!!!!!!!!!!!!!!!!!!!!"];
+    // [Logger logString:@"TEST DID INVALIDATE!!!!!!!!!!!!!!!!!!!!"];
 }
 
 // called once to initialize the view controller

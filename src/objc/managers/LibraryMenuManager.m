@@ -1,7 +1,7 @@
 
 #import "LibraryMenuManager.h"
 #import "../ui/ui.h"
-#import "VisualizerManager.h"
+#import "../visualizer/visualizer.h"
 #import "MeloManager.h"
 
 static LibraryMenuManager *sharedLibraryMenuManager;
@@ -32,7 +32,6 @@ static void createSharedLibraryMenuManager(void *p) {
         _addedPages = [NSMutableArray array];
 
         // _test = [NSMutableArray array];
-        _visualizerManager = [VisualizerManager new];
 
         // needs to be done on the main thread due to creating new view controllers
         [self performSelectorOnMainThread:@selector(setupCustomPages) withObject:nil waitUntilDone:NO];
@@ -51,7 +50,7 @@ static void createSharedLibraryMenuManager(void *p) {
     }
 
     if ([meloManager prefsBoolForKey:@"visualizerPageEnabled"]) {
-        [self addNewPageWithIdent:@"MELO_PAGE_VISUALIZER" title:@"Visualizer" imageName:@"waveform" viewController:[VisualizerViewController new]];
+        [self addNewPageWithIdent:@"MELO_PAGE_VISUALIZER" title:@"Visualizer" imageName:@"waveform" viewController:[VisualizerPageViewController new]];
     }
 }
 

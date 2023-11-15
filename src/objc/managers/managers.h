@@ -4,4 +4,3 @@
 #import "AnimationManager.h"
 #import "RecentlyViewedPageManager.h"
 #import "LibraryMenuManager.h"
-#import "VisualizerManager.h"

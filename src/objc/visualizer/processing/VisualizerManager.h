@@ -13,6 +13,8 @@
     float *_rollingMaxBinValues;
     float *_rollingLoudnessValues;
     int *_beatDetectionBuffer;
+    float *_zeroBuf;
+    int *_samplesPerOutputBin;
 }
 
 @property(assign, nonatomic) NSInteger numVisualizersActive;
@@ -30,6 +32,11 @@
 @property(assign, nonatomic) NSInteger processCount;
 @property(assign, nonatomic) BOOL hasRecentlyDetectedBeat;
 @property(assign, nonatomic) float sampleRate;
+@property(assign, nonatomic) NSInteger test;
+@property(assign, nonatomic) BOOL testEnabled;
+
++ (void)load;
++ (instancetype)sharedInstance;
 
 - (void)initFFT;
 - (void)processAudioBuffers:(AudioBufferList *)bufferList numberFrames:(NSInteger)numFrames;

@@ -235,9 +235,14 @@
 
     // TODO: don't always do your analyzing of the data, do a check with prefs
 
-    if ([[MeloManager sharedInstance] prefsBoolForKey:@"visualizerPageEnabled"]) {
-        LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
-        [libraryMenuManager.visualizerManager processAudioBuffers:bufferList numberFrames:numFrames];
+    // if ([[MeloManager sharedInstance] prefsBoolForKey:@"visualizerPageEnabled"]) {
+    //     [[VisualizerManager sharedInstance] processAudioBuffers:bufferList numberFrames:numFrames];
+    // }
+
+    VisualizerManager *visualizerManager = [VisualizerManager sharedInstance];
+
+    if ([visualizerManager isAnyVisualizerActive]) {
+        [visualizerManager processAudioBuffers:bufferList numberFrames:numFrames];
     }
 }
 
@@ -250,17 +255,27 @@
 - (void)_prepareTap:(id)arg1 maxFrames:(NSInteger)arg2 processingFormat:(const AudioStreamBasicDescription *)arg3 {
     %orig;
 
+    // [Logger logString:@"LOGGING TAP OMG OMG OMG OMG OMG OMG"];
+    // [Logger logStringWithFormat:@"_prepareTap: %@, maxFrames: %ld", arg1, arg2];
+
     // [Logger logStringWithFormat:@"PREPARE TAP!! mBytesPerFrame: %ld", arg3->mBytesPerFrame];
     // [Logger logStringWithFormat:@"sizeof(int): %ld, sizeof(float): %ld, sizeof(short): %ld, sizeof(NSInteger): %ld, sizeof(CGFloat): %ld", sizeof(int), sizeof(float), sizeof(short), sizeof(NSInteger), sizeof(CGFloat)];
     // [Logger logStringWithFormat:@"isFloatFlag: %i, isBigEndian: %i, signedInt: %i", arg3->mFormatFlags & kAudioFormatFlagIsFloat, arg3->mFormatFlags & kAudioFormatFlagIsBigEndian,  arg3->mFormatFlags & kAudioFormatFlagIsSignedInteger];
-    [Logger logStringWithFormat:@"SAMPLE RATE: %lf", arg3->mSampleRate];
+    // [Logger logStringWithFormat:@"SAMPLE RATE: %lf, FRAMES PER PACKET: %ld", arg3->mSampleRate, arg3->mFramesPerPacket];
+    // [Logger logStringWithFormat:@"packet duration (s): %lf", (1 / arg3->mSampleRate) * arg3->mFramesPerPacket];
+    // [Logger logStringWithFormat:@"mBytesPerFrame: %ld", arg3->mBytesPerFrame];
+    // [Logger logStringWithFormat:@"mBytesPerPacket: %ld", arg3->mBytesPerPacket];
+    // [Logger logStringWithFormat:@"mChannelsPerFrame: %ld", arg3->mChannelsPerFrame];
+
+    VisualizerManager *visualizerManager = [VisualizerManager sharedInstance];
+    visualizerManager.sampleRate = arg3->mSampleRate;
 }
 
 %end
 
 %hook MusicNowPlayingControlsViewController
-%property(strong, nonatomic) VisualizerView *vizView;
-%property(assign, nonatomic) BOOL shouldShowVizView;
+// %property(strong, nonatomic) VisualizerView *vizView;
+// %property(assign, nonatomic) BOOL shouldShowVizView;
 
 - (id)init {
 
@@ -273,16 +288,16 @@
     %orig;
     
 
-    BOOL shouldShowVizView = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
-    [self setShouldShowVizView:shouldShowVizView];
+    // BOOL shouldShowVizView = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
+    // [self setShouldShowVizView:shouldShowVizView];
 
-    VisualizerView *vizView = [[VisualizerView alloc] initWithFrame:CGRectZero];
+    // VisualizerView *vizView = [[VisualizerView alloc] initWithFrame:CGRectZero];
     
-    vizView.userInteractionEnabled = NO;
-    vizView.hidden = !shouldShowVizView;
+    // vizView.userInteractionEnabled = NO;
+    // vizView.hidden = !shouldShowVizView;
 
-    [self setVizView:vizView];
-    [[self view] addSubview:vizView];
+    // [self setVizView:vizView];
+    // [[self view] addSubview:vizView];
 
         // VisualizerView *vizView = [self vizView];
     // UIView *titleContainer = MSHookIvar<UIView *>(self, "topContainerView");
@@ -330,98 +345,96 @@
 - (void)viewWillAppear:(BOOL)arg1 {
     %orig;
 
-    if (![self shouldShowVizView]) {
-        return;
-    }
+    // if (![self shouldShowVizView]) {
+    //     return;
+    // }
 
-    [self layoutVizView];
+    // [self layoutVizView];
 }
 
 - (void)viewDidAppear:(BOOL)arg1 {
     %orig;
 
-    if (![self shouldShowVizView]) {
-        return;
-    }
+    // if (![self shouldShowVizView]) {
+    //     return;
+    // }
 
-    VisualizerView *vizView = [self vizView];
+    // VisualizerView *vizView = [self vizView];
 
-    NSDictionary *context = @{
-        @"vizView": vizView,
-    };
+    // NSDictionary *context = @{
+    //     @"vizView": vizView,
+    // };
 
-    [UIView beginAnimations:@"MELO_ANIMATION_ANIMATE_MUSIC_PLAYER_VISUALIZER" context:(__bridge_retained void *)context];
-    [UIView setAnimationDuration:0.2];
-    [UIView setAnimationDelegate:[AnimationManager new]];
-    [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
-    // [UIView setAnimationBeginsFromCurrentState:YES];
+    // [UIView beginAnimations:@"MELO_ANIMATION_ANIMATE_MUSIC_PLAYER_VISUALIZER" context:(__bridge_retained void *)context];
+    // [UIView setAnimationDuration:0.2];
+    // [UIView setAnimationDelegate:[AnimationManager new]];
+    // [UIView setAnimationDidStopSelector:@selector(handleAnimationDidStop:finished:context:)];
+    // // [UIView setAnimationBeginsFromCurrentState:YES];
 
-    vizView.alpha = 1;
+    // vizView.alpha = 1;
 
-    [UIView commitAnimations];
+    // [UIView commitAnimations];
 
-    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
-    VisualizerManager *visualizerManager = libraryMenuManager.visualizerManager;
-    visualizerManager.numVisualizersActive++;
+    // VisualizerManager *visualizerManager = [VisualizerManager sharedInstance];
+    // visualizerManager.numVisualizersActive++;
 }
 
 - (void)viewDidDisappear:(BOOL)arg1 {
     %orig;
 
-    [[self vizView] invalidateUpdateTimer];
-    [self vizView].alpha = 0;
+    // [[self vizView] invalidateUpdateTimer];
+    // [self vizView].alpha = 0;
 
-    LibraryMenuManager *libraryMenuManager = [LibraryMenuManager sharedInstance];
-    VisualizerManager *visualizerManager = libraryMenuManager.visualizerManager;
-    visualizerManager.numVisualizersActive--;
+    // VisualizerManager *visualizerManager = [VisualizerManager sharedInstance];
+    // visualizerManager.numVisualizersActive--;
 }
 
 - (void)viewDidLayoutSubviews {
     %orig;
 
-    if (![self shouldShowVizView]) {
-        return;
-    }
+    // if (![self shouldShowVizView]) {
+    //     return;
+    // }
     
-    [self layoutVizView];
+    // [self layoutVizView];
 }
 
-%new 
-- (void)layoutVizView {
-    VisualizerView *vizView = [self vizView];
-    UIView *titleContainer = MSHookIvar<UIView *>(self, "topContainerView");
-    UIView *artworkView = MSHookIvar<UIView *>(self, "artworkView");
-    UIView *timeControl = MSHookIvar<UIView *>(self, "timeControl");
+// %new 
+// - (void)layoutVizView {
+//     // VisualizerView *vizView = [self vizView];
+//     // UIView *titleContainer = MSHookIvar<UIView *>(self, "topContainerView");
+//     // UIView *artworkView = MSHookIvar<UIView *>(self, "artworkView");
+//     // UIView *timeControl = MSHookIvar<UIView *>(self, "timeControl");
 
-    CGRect vizFrame = CGRectMake(
-        timeControl.frame.origin.x,
-        artworkView.frame.origin.y + artworkView.frame.size.height,
-        timeControl.frame.size.width,
-        titleContainer.frame.origin.y - (artworkView.frame.origin.y + artworkView.frame.size.height) + 10
-    );
+//     // CGRect vizFrame = CGRectMake(
+//     //     timeControl.frame.origin.x,
+//     //     artworkView.frame.origin.y + artworkView.frame.size.height,
+//     //     timeControl.frame.size.width,
+//     //     titleContainer.frame.origin.y - (artworkView.frame.origin.y + artworkView.frame.size.height) + 10
+//     // );
 
-    vizView.frame = vizFrame;
-}
+//     // vizView.frame = vizFrame;
+// }
 
 %new
 - (void)handleLibraryPrefsUpdate:(NSNotification *)arg1 {
 
-    VisualizerView *vizView = [self vizView];
-    BOOL newShouldShowViz = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
+    // VisualizerView *vizView = [self vizView];
+    // BOOL newShouldShowViz = [[MeloManager sharedInstance] prefsBoolForKey:@"visualizerShowInMusicPlayerEnabled"];
 
-    if (newShouldShowViz != [self shouldShowVizView]) {
-        [self setShouldShowVizView:newShouldShowViz];
+    // if (newShouldShowViz != [self shouldShowVizView]) {
+    //     [self setShouldShowVizView:newShouldShowViz];
 
-        if (newShouldShowViz) {
-            [vizView startUpdateTimer];
-        } else {
-            [vizView invalidateUpdateTimer];
-        }
+    //     if (newShouldShowViz) {
+    //         [vizView startUpdateTimer];
+    //     } else {
+    //         [vizView invalidateUpdateTimer];
+    //     }
 
-        vizView.hidden = !newShouldShowViz;
+    //     vizView.hidden = !newShouldShowViz;
 
-        [[self view] setNeedsLayout];
-    }
+    //     [[self view] setNeedsLayout];
+    // }
 }
 
 %end

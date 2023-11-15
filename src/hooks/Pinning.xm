@@ -11,8 +11,8 @@
 %hook MPModelLibraryRequest
 
 - (void)setContentRange:(NSRange)arg1 {
-    [[Logger sharedInstance] logStringWithFormat:@"MPModelLibraryRequest: %p - setContentRange: %@", self, arg1];
-    [[Logger sharedInstance] logStringWithFormat:@"length: %li", (long)arg1.length];
+    // [[Logger sharedInstance] logStringWithFormat:@"MPModelLibraryRequest: %p - setContentRange: %@", self, arg1];
+    // [[Logger sharedInstance] logStringWithFormat:@"length: %li", (long)arg1.length];
 
     // TODO: check if length == 60? since i believe that's the default when getting recently added albums
     // however this also doesn't seem to affect anything? so idk. 

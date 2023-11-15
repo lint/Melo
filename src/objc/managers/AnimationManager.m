@@ -159,12 +159,12 @@
         [volumeSlider setShouldApplyLargeSliderWidth:shouldApplyLargeOriginalSliderWidth];
 
     // completeion code for showing the music player visualizer
-    } else if ([@"MELO_ANIMATION_ANIMATE_MUSIC_PLAYER_VISUALIZER" isEqualToString:animationID]) {
+    } /* else if ([@"MELO_ANIMATION_ANIMATE_MUSIC_PLAYER_VISUALIZER" isEqualToString:animationID]) {
         
         VisualizerView *vizView = ctx[@"vizView"];
         [vizView startUpdateTimer];
 
-    } else {
+    } */ else {
         [Logger logString:@"AnimationManager handleAnimationDidStop could not match animationID"];
     }
     
