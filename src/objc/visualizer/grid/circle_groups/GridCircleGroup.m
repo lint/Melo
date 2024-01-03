@@ -2,6 +2,12 @@
 #import "GridCircleGroup.h"
 #import "../types/types.h"
 #import "../GridMath.h"
+#import "GridCircleInfo.h"
+#import "../delaunay/DelaunayVoronoi.h"
+#import "../delaunay/DelaunayEdge.h"
+#import "../delaunay/DelaunayLineSegment.h"
+#import "../delaunay/DelaunayTriangle.h"
+#import "../delaunay/DelaunaySite.h"
 
 @implementation GridCircleGroup
 
@@ -11,36 +17,256 @@
 
         _circles = [NSMutableArray array];
         _circleInfoMap = [NSMutableDictionary dictionary];
+        _testString = [NSMutableString string];
+        _edges = [NSMutableArray array];
 
     }
 
     return self;
 }
 
+- (GridCircleInfo *)circleInfoForCircle:(GridCircle *)circle {
+    if (!circle) {
+        return nil;
+    }
+
+    return _circleInfoMap[circle.identifier];
+}
+
+- (GridCircle *)circleWithIdentifier:(NSString *)ident {
+
+    for (GridCircle *circle in _circles) {
+        if ([ident isEqualToString:circle.identifier]) {
+            return circle;
+        }
+    }
+
+    return nil;   
+}
+
+- (void)removeCircleWithIdentifier:(NSString *)ident {
+
+    GridCircle *circle = [self circleWithIdentifier:ident];
+    
+    if (circle) {
+        [self removeCirclesInArray:@[circle]];
+    }
+}
+
+- (void)removeCirclesInArray:(NSArray *)circlesToRemove {
+
+    // remove circles from main array
+    [_circles removeObjectsInArray:circlesToRemove];
+    
+    // remove circles from intersections
+    for (id key in _circleInfoMap) {
+        GridCircleInfo *circleInfo = _circleInfoMap[key];
+        [circleInfo.intersectingCircles removeObjectsInArray:circlesToRemove];
+    }
+
+    // remove circles from the info map
+    for (GridCircle *circle in circlesToRemove) {
+        if (_circleInfoMap[circle.identifier]) {
+            [_circleInfoMap removeObjectForKey:circle.identifier];
+        }
+    }
+}
+
+- (NewCircleAdditionStatus)attemptCircleAddition:(GridCircle *)newCircle {
+
+    if ([_circles containsObject:newCircle]) {
+        return GRID_CIRCLE_GROUP_ADDITION_STATUS_CONTAINED;
+    } else if ([_circles count] == 0) {
+        [self addNewCircle:newCircle];
+        return GRID_CIRCLE_GROUP_ADDITION_STATUS_SUCCESSFUL;
+    }
+
+    NSMutableArray *intersectingCircles = [NSMutableArray array];
+    NSMutableArray *circlesToRemove = [NSMutableArray array];
+    BOOL newCircleIsContained = NO;
+    BOOL shouldAddNewCircle = NO;
+
+    for (GridCircle *groupCircle in _circles) {
+
+        CGFloat centerDist = [GridMath distanceBetweenPoint:newCircle.center andPoint:groupCircle.center];
+
+        // newCircle is inside groupCircle
+        if (centerDist <= groupCircle.radius - newCircle.radius) {
+            
+            shouldAddNewCircle = NO;
+            newCircleIsContained = YES;
+            [circlesToRemove addObject:newCircle];
+            break;
+        
+        // groupCircle is inside newCircle
+        } else if (centerDist <= newCircle.radius - groupCircle.radius) {
+            
+            shouldAddNewCircle = YES;
+            [circlesToRemove addObject:groupCircle];
+        
+        // circles intersect
+        } else if (centerDist < groupCircle.radius + newCircle.radius) {
+            
+            shouldAddNewCircle = YES;
+            [intersectingCircles addObject:groupCircle];
+        }
+    }
+    
+    // remove contained circles from the group
+    [self removeCirclesInArray:circlesToRemove];
+
+    // add a new circle to the group
+    if (shouldAddNewCircle) {
+        [self addNewCircle:newCircle];
+
+        // update the group circles' intersections
+        for (GridCircle *circle in intersectingCircles) {
+            GridCircleInfo *circleInfo = _circleInfoMap[circle.identifier];
+            [circleInfo.intersectingCircles addObject:newCircle];
+        }
+
+        // update the new circle's intersections
+        GridCircleInfo *newCircleInfo = _circleInfoMap[newCircle.identifier];
+        newCircleInfo.intersectingCircles = intersectingCircles;
+
+        return GRID_CIRCLE_GROUP_ADDITION_STATUS_SUCCESSFUL;
+    }
+
+    // check if the new circle was not added due to no intersections or to being contained
+    return newCircleIsContained ? GRID_CIRCLE_GROUP_ADDITION_STATUS_CONTAINED : GRID_CIRCLE_GROUP_ADDITION_STATUS_FAILURE;
+}
+
+- (void)addNewCircle:(GridCircle *)circle {
+    [_circles addObject:circle];
+    GridCircleInfo *circleInfo = [[GridCircleInfo alloc] initWithCircle:circle];
+    _circleInfoMap[circle.identifier] = circleInfo;
+}
+
 - (void)calculateShape {
+
+    // reset circle info
+    for (id key in _circleInfoMap) {
+        GridCircleInfo *circleInfo = _circleInfoMap[key];
+        [circleInfo resetCalculatedValues];        
+    }
 
     // iterate over every circle in the group
     for (GridCircle *circle in _circles) {
 
         [self calculateIntersectionsForCircle:circle];
-        [self calculateRegionBoundariesForCircle:circle];
+        // [self calculateRegionBoundariesForCircle:circle];
+        [self calculateTriangulation];
     }
+}
+
+- (void)calculateTriangulation {
+
+    NSMutableArray *points = [NSMutableArray array];
+
+    for (GridCircle *circle in _circles) {
+        [points addObject:[NSValue valueWithCGPoint:circle.center]];
+    }
+    // CGRect plotBounds = CGRectMake(0, 0, _viewBounds.size.width, _viewBounds.size.height / _viewBounds.size.width);
+
+    DelaunayVoronoi *del = [DelaunayVoronoi voronoiWithPoints:points plotBounds:CGRectZero];
+    NSMutableArray *edges = [NSMutableArray array];
+
+    // for (DelaunayEdge *e in del.edges) {
+
+    //     GridLine *line = [[GridLine alloc] initWithStartPoint:e.delaunayLine.p0 endPoint:e.delaunayLine.p1];
+    //     [edges addObject:line];
+    // }
+
+    for (DelaunayTriangle *t1 in del.triangles) {
+
+        CGPoint circumcenter = [t1 calculateCircumcenter];
+        
+        for (DelaunayTriangle *t2 in del.triangles) {
+            
+            if (t1 == t2) {
+                continue;
+            }
+
+            if ([t1 isAdjacentToTriangle:t2]) {
+                CGPoint otherCircumcenter = [t2 calculateCircumcenter];
+                GridLine *line = [[GridLine alloc] initWithStartPoint:circumcenter endPoint:otherCircumcenter];
+                [edges addObject:line];
+            }
+        }    
+
+    }
+
+    NSMutableArray *edgesToInfinity = [NSMutableArray array];
+    NSMutableArray *triangleEdges = [NSMutableArray array];
+
+    CGFloat infScale = 100;
+
+    for (DelaunayTriangle *t1 in del.triangles) {
+        CGPoint circumcenter = [t1 calculateCircumcenter];
+        GridLine *line1 = [[GridLine alloc] initWithStartPoint:t1.site1.coordinates endPoint:t1.site2.coordinates];
+        GridLine *line2 = [[GridLine alloc] initWithStartPoint:t1.site2.coordinates endPoint:t1.site3.coordinates];
+        GridLine *line3 = [[GridLine alloc] initWithStartPoint:t1.site3.coordinates endPoint:t1.site1.coordinates];
+        [triangleEdges addObjectsFromArray:@[line1, line2, line3]];
+
+        BOOL line1Intersected = NO;
+        BOOL line2Intersected = NO;
+        BOOL line3Intersected = NO;
+
+        for (GridLine *edge in edges) {
+            line1Intersected |= [GridMath findIntersectionOfLine:line1 andLine:edge solution:nil];
+            line2Intersected |= [GridMath findIntersectionOfLine:line2 andLine:edge solution:nil];
+            line3Intersected |= [GridMath findIntersectionOfLine:line3 andLine:edge solution:nil];
+        }
+
+        if (!line1Intersected) {
+            CGPoint midpoint = [line1 calculateMidpoint];
+            CGFloat xDiff = midpoint.x - circumcenter.x;
+            CGFloat yDiff = midpoint.y - circumcenter.y;
+            CGPoint newPoint = CGPointMake(circumcenter.x + xDiff * infScale, circumcenter.y + yDiff * infScale);
+
+            GridLine *line = [[GridLine alloc] initWithStartPoint:circumcenter endPoint:newPoint];
+            [edgesToInfinity addObject:line];
+        }
+        if (!line2Intersected) {
+            CGPoint midpoint = [line2 calculateMidpoint];
+            CGFloat xDiff = midpoint.x - circumcenter.x;
+            CGFloat yDiff = midpoint.y - circumcenter.y;
+            CGPoint newPoint = CGPointMake(circumcenter.x + xDiff * infScale, circumcenter.y + yDiff * infScale);
+
+            GridLine *line = [[GridLine alloc] initWithStartPoint:circumcenter endPoint:newPoint];
+            [edgesToInfinity addObject:line];
+        }
+
+        if (!line3Intersected) {
+            CGPoint midpoint = [line3 calculateMidpoint];
+            CGFloat xDiff = midpoint.x - circumcenter.x;
+            CGFloat yDiff = midpoint.y - circumcenter.y;
+            CGPoint newPoint = CGPointMake(circumcenter.x + xDiff * infScale, circumcenter.y + yDiff * infScale);
+
+            GridLine *line = [[GridLine alloc] initWithStartPoint:circumcenter endPoint:newPoint];
+            [edgesToInfinity addObject:line];
+        }
+    }
+
+    [edges addObjectsFromArray:edgesToInfinity];
+    // [edges addObjectsFromArray:triangleEdges];
+
+    _edges = edges;
 }
 
 - (CGPoint)calculateClosestPointToShapeFromPoint:(CGPoint)point {
 
     NSArray *containingCircles = [self circlesWithRegionContainingPoint:point];
 
-    if ([containingCircles count] == 0) {
-        return CGPointZero;
+    if ([containingCircles count] != 1) {
+        return point;
     }
 
     // for (GridCircle *circle in containingCircles) {
     GridCircle *circle = containingCircles[0];
     GridCircleInfo *circleInfo = _circleInfoMap[circle.identifier];
 
-    CGPoint pointAngle = [GridMath angleOfPoint:point aroundCircle:circle];
-    CGPoint circleProjection = [GridMath pointOnCircle:circle angle:pointAngle]; // TODO: could combine these into one method
+    CGPoint circleProjection = [GridMath projectPoint:point ontoCircle:circle];
     CGPoint weightedProjection = [GridMath pointBetweenPoint:point andPoint:circleProjection destWeight:circle.strength];
 
     // iterate over every outer arc of the circle
@@ -57,7 +283,7 @@
     CGFloat minProjDist = CGFLOAT_MAX;
     CGPoint minLineProj = CGPointZero;
 
-    for (GridLine *line in circleInfo.regionBoundaryLines) {
+    for (GridLine *line in _edges) {
         
         CGPoint lineProjection = [GridMath projectPoint:weightedProjection ontoLine:line];
         CGFloat squaredDist = [GridMath squaredDistanceBetweenPoint:lineProjection andPoint:weightedProjection];
@@ -93,7 +319,7 @@
         // find the end point information
         NSDictionary *startPointData = @{
             @"point": [NSValue valueWithCGPoint:line.start],
-            @"dist": 0
+            @"dist": @0
         };
         NSDictionary *endPointData = @{
             @"point": [NSValue valueWithCGPoint:line.end],
@@ -128,7 +354,7 @@
         // sort the intersection points using the distance to the start point
         [intersectionPoints sortUsingDescriptors:sortDescriptors];
 
-        // iterate over every arc on the circle going counter clockwise
+        // iterate over line segment of the generated line
         NSInteger numIntersectionPoints = [intersectionPoints count];
         for (NSInteger i = 0; i < numIntersectionPoints; i++) {
 
@@ -138,7 +364,7 @@
             CGPoint point1 = [point1Data[@"point"] CGPointValue];
             CGPoint point2 = [point2Data[@"point"] CGPointValue];
 
-            CGPoint midpoint = [GridMath midpointOfPoint:point1 andPoint:point2];
+            CGPoint midpoint = [GridMath pointBetweenPoint:point1 andPoint:point2 destWeight:0.5];
 
             NSInteger numContainingRegions = [self numCirclesWithRegionContainingPoint:midpoint];
 
@@ -155,21 +381,39 @@
 
     CGFloat minPower = CGFLOAT_MAX;
     NSMutableArray *minCircleRegions = [NSMutableArray array];
+    CGFloat tolerance = 0.001;
 
     for (GridCircle *circle in _circles) {
-        CGFloat power = [GridMath powerOfPoint:point aboutCircle:circle];
-        CGFloat powerDiff = abs(power - minPower);
+        CGFloat power = [GridMath powerOfPoint:point aroundCircle:circle];
+        CGFloat powerDiff = fabs(power - minPower);
 
-        // find the new minimum power
-        if (power < minPower && powerDiff > 0.001) {
+        // // find the new minimum power
+        // if (power < minPower && powerDiff > 0.0001) {
+        //     minPower = power;
+        //     [minCircleRegions removeAllObjects];
+        //     [minCircleRegions addObject:circle];
+        
+        // // check if another circle has the same power as the min within a tolerance
+        // } else if (powerDiff < 0.0001) {
+        //     if (power < minPower) {
+        //         [minCircleRegions insertObject:circle atIndex:0];
+        //     } else {
+        //         [minCircleRegions addObject:circle];
+        //     }
+        // }
+
+        if (powerDiff == 0 || powerDiff/(fabs(power)+fabs(minPower)) < tolerance) {
+            if (power < minPower) {
+                [minCircleRegions insertObject:circle atIndex:0];
+            } else {
+                [minCircleRegions addObject:circle];
+            }
+        } else if (power < minPower) {
             minPower = power;
             [minCircleRegions removeAllObjects];
             [minCircleRegions addObject:circle];
-        
-        // check if another circle has the same power as the min within a tolerance
-        } else if (powerDiff < 0.001) {
-            [minCircleRegions addObject:circle];
         }
+        
     }
 
     return minCircleRegions;
@@ -179,52 +423,45 @@
 
     CGFloat minPower = CGFLOAT_MAX;
     NSInteger numMinCircleRegions = 0;
+    CGFloat tolerance = 0.001;
     
     for (GridCircle *circle in _circles) {
-        CGFloat power = [GridMath powerOfPoint:point aboutCircle:circle];
-        CGFloat powerDiff = abs(power - minPower);
+        CGFloat power = [GridMath powerOfPoint:point aroundCircle:circle];
+        CGFloat powerDiff = fabs(power - minPower);
 
-        // find the new minimum power
-        if (power < minPower && powerDiff > 0.001) {
+        if (powerDiff == 0 || powerDiff/(fabs(power)+fabs(minPower)) < tolerance) {
+            numMinCircleRegions++;
+        } else if (power < minPower) {
             minPower = power;
             numMinCircleRegions = 1;
+        }
         
-        // check if another circle has the same power as the min within a tolerance
-        } else if (powerDiff < 0.001) {
-            numMinCircleRegions++;
-        }
+        // // find the new minimum power
+        // if (power < minPower && powerDiff >= 0.1) {
+        //     minPower = power;
+        //     numMinCircleRegions = 1;
+        
+        // // check if another circle has the same power as the min within a tolerance
+        // } else if (powerDiff < 0.1) {
+        //     numMinCircleRegions++;
+        // }
     }
 
-    return minCircleRegions;
-}
-
-- (BOOL)findIntersectionOfLine:(GridLine *)line1 andLine:(GridLine *)line2 solution:(CGPoint *)solPoint {
-
-    // from https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
-
-    CGPoint v1 = CGPointMake(line1.end.x - line1.start.x, line1.end.y - line1.start.y);
-    CGPoint v2 = CGPointMake(line2.end.x - line2.start.x, line2.end.y - line2.start.y);
-
-    CGFloat s = (-v1.y * (line1.start.x - line2.start.x) + v1.x * (line1.start.y - line2.start.y)) / (-v2.x * v1.y + v1.x * v2.y);
-    CGFloat t = ( v2.x * (line1.start.y - line2.start.y) - v2.y * (line1.start.x - line2.start.x)) / (-v2.x * v1.y + v1.x * v2.y);
-    
-    // intersection detected
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
-
-        if (solPoint) {
-            solPoint->x = line1.start.x + (t * v1.x);
-            solPoint->y = line1.start.y + (t * v1.y);
-        }
-
-        return YES;
-    }
-
-    return NO;
+    return numMinCircleRegions;
 }
 
 - (void)calculateIntersectionsForCircle:(GridCircle *)circle {
     
     GridCircleInfo *circleInfo = _circleInfoMap[circle.identifier];
+
+    if ([_circles count] == 1) {
+
+        GridArc *arc = [[GridArc alloc] initWithStartAngle:0 endAngle:2 * M_PI circle:circle];
+        [circleInfo.outerArcs addObject:arc];
+
+        return;
+    }
+
     NSArray *sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"angle" ascending:YES]];
     NSMutableArray *intersectionPoints = [NSMutableArray array];
 
@@ -262,7 +499,7 @@
         BOOL isEdge = [self isArcGroupOuterEdge:arc];
 
         if (isEdge) {
-            [Logger logString:@"found an edge arc!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"];
+            // [Logger logString:@"found an edge arc!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"];
 
             [circleInfo.outerArcs addObject:arc];
         }
@@ -290,87 +527,15 @@
     return YES;
 }
 
-- (NewCircleAdditionStatus)attemptCircleAddition:(GridCircle *)newCircle {
+- (BOOL)circlesContainPoint:(CGPoint)point {
 
-    if ([_circles containsObject:newCircle]) {
-        return GRID_CIRCLE_GROUP_ADDITION_STATUS_CONTAINED;
-    } else if ([_circles count] == 0) {
-        [self addNewCircle:newCircle];
-        return GRID_CIRCLE_GROUP_ADDITION_STATUS_SUCCESSFUL;
-    }
-
-    NSMutableArray *intersectingCircles = [NSMutableArray array];
-    NSMutableArray *circlesToRemove = [NSMutableArray array];
-    BOOL newCircleIsContained = NO;
-    BOOL shouldAddNewCircle = NO;
-
-    for (GridCircle *groupCircle in _circles) {
-
-        CGFloat centerDist = [GridMath distanceOfPoint:newCircle.center andPoint:groupCircle.center];
-
-        // newCircle is inside groupCircle
-        if (centerDist <= groupCircle.radius - newCircle.radius) {
-            
-            shouldAddNewCircle = NO;
-            newCircleIsContained = YES;
-            [circlesToRemove addObject:newCircle];
-            break;
-        
-        // groupCircle is inside newCircle
-        } else if (centerDist <= newCircle.radius - groupCircle.radius) {
-            
-            shouldAddNewCircle = YES;
-            [circlesToRemove addObject:groupCircle];
-        
-        // circles intersect
-        } else if (centerDist < groupCircle.radius + newCircle.radius) {
-            
-            shouldAddNewCircle = YES;
-            [intersectingCircles addObject:groupCircle];
+    for (GridCircle *circle in _circles) {
+        if ([GridMath isPoint:point withinCircle:circle]) {
+            return YES;
         }
     }
 
-    // remove contained circles from the group
-    [_circles removeObjectsInArray:circlesToRemove];
-    
-    // remove contained circles from intersections
-    for (id key in _circleInfoMap) {
-        GridCircleInfo *circleInfo = _circleInfoMap[key];
-        [circleInfo.intersectingCircles removeObjectsInArray:circlesToRemove];
-    }
-
-    // remove circles from the info map
-    for (GridCircle *circle in circlesToRemove) {
-        if (_circleInfoMap[circle.identifier]) {
-            [_circleInfoMap removeObjectForKey:circle.identifier];
-        }
-    }
-
-    // add a new circle to the group
-    if (shouldAddNewCircle) {
-        [self addNewCircle:newCircle];
-
-        // update the group circles' intersections
-        for (GridCircle *circle in intersectingCircles) {
-            GridCircleInfo *circleInfo = _circleInfoMap[circle.identifier];
-            [circleInfo.intersectingCircles addObject:newCircle];
-        }
-
-        // update the new circle's intersections
-        GridCircleInfo *newCircleInfo = _circleInfoMap[newCircle.identifier];
-        newCircleInfo.intersectingCircles = intersectingCircles;
-
-        return GRID_CIRCLE_GROUP_ADDITION_STATUS_SUCCESSFUL;
-    }
-
-    // check if the new circle was not added due to no intersections or to being contained
-    return newCircleIsContained ? GRID_CIRCLE_GROUP_ADDITION_STATUS_CONTAINED : GRID_CIRCLE_GROUP_ADDITION_STATUS_FAILURE;
-}
-
-- (void)addNewCircle:(GridCircle *)circle {
-    [_circles addObject:circle];
-    GridCircleInfo *circleInfo = [[GridCircleInfo alloc] initWithCircle:circle];
-    _circleInfoMap[circle.identifier] = circleInfo;
+    return NO;
 }
 
 @end

@@ -174,14 +174,6 @@ static void createSharedVisualizerManager(void *p) {
             _samples[i] /= numChannels;
         }
 
-        // float *leftChannelData = (float *)bufferList->mBuffers[0].mData;
-        // float *rightChannelData = (float *)bufferList->mBuffers[1].mData;
-
-        // // combine both channels into one sample buffer
-        // for (NSInteger i = 0; i < _sampleCount; i++) {
-        //     _samples[i] = (leftChannelData[i] + rightChannelData[i]) / 2;
-        // }
-
         // apply the hamming window function
         // vDSP_vmul(_complexData.realp, 1, _window, 1, _complexData.realp, 1, _sampleCount);
         // vDSP_vmul(_complexData.imagp, 1, _window, 1, _complexData.imagp, 1, _sampleCount);

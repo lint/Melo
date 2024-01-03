@@ -1,6 +1,6 @@
 
 #import "GridCircleInfo.h"
-#import "GridCircle.h"
+#import "../types/types.h"
 
 @implementation GridCircleInfo
 
@@ -11,6 +11,7 @@
     if ((self = [super init])) {
 
         _intersectingCircles = [NSMutableArray array];
+        
         _intersectionLines = [NSMutableArray array];
         _outerArcs = [NSMutableArray array];
         _regionBoundaryLines = [NSMutableArray array];
@@ -27,6 +28,12 @@
     }
 
     return self;
+}
+
+- (void)resetCalculatedValues {
+    _intersectionLines = [NSMutableArray array];
+    _outerArcs = [NSMutableArray array];
+    _regionBoundaryLines = [NSMutableArray array];
 }
 
 @end

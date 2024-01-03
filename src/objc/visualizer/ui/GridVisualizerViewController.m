@@ -14,6 +14,8 @@
         MeloManager *meloManager = [MeloManager sharedInstance];
 
         _manager = [GridVisualizerManager new];
+        // GridCircleGroupCollection *circleGroups = [[GridCircleGroupCollection alloc] init];
+        // _manager.circleGroups = circleGroups;
         [_manager updateNumColumns:[meloManager prefsIntForKey:@"visualizerNumBars"]];
 
         _dataUpdateInterval = .1;
@@ -26,13 +28,14 @@
         _shouldAnimateAlpha = [meloManager prefsBoolForKey:@"visualizerAnimateAlphaEnabled"];
 
         _circleDebugEnabled = YES;
+        _circleIntersectionsDebugEnabled = YES;
 
         // _testPoint = CGPointMake(0, 0.5);
         // _testPointMult = 1;
 
         _shapeLayer = [CAShapeLayer layer];
         _shapeLayer.path = [UIBezierPath new].CGPath;
-        _shapeLayer.strokeColor = [UIColor whiteColor].CGColor;
+        _shapeLayer.strokeColor = [UIColor colorWithRed:1 green:1 blue:1 alpha:.5].CGColor;
         _shapeLayer.fillColor = [UIColor clearColor].CGColor;
         _shapeLayer.lineWidth = 1.0;
 
@@ -42,8 +45,15 @@
         _circleDebugLayer.fillColor = [UIColor clearColor].CGColor;
         _circleDebugLayer.lineWidth = 1.0;
 
+        _circleIntersectionsDebugLayer = [CAShapeLayer layer];
+        _circleIntersectionsDebugLayer.path = [UIBezierPath new].CGPath;
+        _circleIntersectionsDebugLayer.strokeColor = [UIColor redColor].CGColor;
+        _circleIntersectionsDebugLayer.fillColor = [UIColor clearColor].CGColor;
+        _circleIntersectionsDebugLayer.lineWidth = 1.0;
+
         [self.view.layer addSublayer:_shapeLayer];
         [self.view.layer addSublayer:_circleDebugLayer];
+        [self.view.layer addSublayer:_circleIntersectionsDebugLayer];
 
         // _maxNumGridCircles = 10;
         // _numGridCircles = 0;
@@ -124,6 +134,12 @@
     } else {
         _circleDebugLayer.path = [UIBezierPath new].CGPath;
     }
+
+    if (_circleIntersectionsDebugEnabled) {
+        _circleIntersectionsDebugLayer.path = [_manager currentIntersectionLinesPath].CGPath;
+    } else {
+        _circleIntersectionsDebugLayer.path = [UIBezierPath new].CGPath;
+    }
 }
 
 // handle a touch detected on the view
@@ -149,7 +165,7 @@
         // CGPoint normPoint = CGPointMake(point.x / self.view.bounds.size.width, point.y / self.view.bounds.size.height);
         CGPoint normPoint = CGPointMake(avgX / self.view.bounds.size.width, avgY / self.view.bounds.size.height);
 
-        [_manager addCircleWithIdentifier:@"touch_gesture_circle" normCenter:normPoint radius:0.2 strength:-.1];
+        [_manager addCircleWithIdentifier:@"touch_gesture_circle" normCenter:normPoint radius:0.2 strength:.5];
 
     } else {
         [_manager removeCircleWithIdentifier:@"touch_gesture_circle"];
@@ -234,6 +250,7 @@
 
 - (void)toggleCircleDebugLayer {
     _circleDebugEnabled = !_circleDebugEnabled;
+    _circleIntersectionsDebugEnabled = !_circleIntersectionsDebugEnabled;
 }
 
 @end

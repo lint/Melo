@@ -16,6 +16,9 @@
 @property(strong, nonatomic) CAShapeLayer *circleDebugLayer;
 @property(assign, nonatomic) BOOL circleDebugEnabled;
 
+@property(strong, nonatomic) CAShapeLayer *circleIntersectionsDebugLayer;
+@property(assign, nonatomic) BOOL circleIntersectionsDebugEnabled;
+
 @property(assign, nonatomic) CGFloat pointSpacing;
 @property(assign, nonatomic) BOOL shouldAnimateAlpha;
 

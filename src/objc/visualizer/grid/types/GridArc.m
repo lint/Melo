@@ -22,8 +22,8 @@
 }
 
 - (CGPoint)calculateMidpoint {
-    CGFloat midpointAngle = (arc.startAngle + arc.endAngle) / 2;
-    return [GridMath pointOnCircle:_circle angle:midpointAngle];
+    CGFloat midpointAngle = (_startAngle + _endAngle) / 2;
+    return [GridMath pointOnCircle:_circle withAngle:midpointAngle];
 }
 
 @end

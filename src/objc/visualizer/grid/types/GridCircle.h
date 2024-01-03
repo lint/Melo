@@ -18,6 +18,6 @@
 @property(assign, nonatomic) CGFloat radius;
 @property(assign, nonatomic) CGFloat strength;
 @property(assign, nonatomic) NSString *identifier;
-- (instancetype)initWithWithIdentifier:(NSString *)ident normalizedCenter:(CGPoint)center radius:(CGFloat)radius strength:(CGFloat)strength;
+- (instancetype)initWithIdentifier:(NSString *)ident normalizedCenter:(CGPoint)center radius:(CGFloat)radius strength:(CGFloat)strength;
 
 @end

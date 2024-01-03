@@ -9,5 +9,6 @@
 @property(strong, nonatomic) NSMutableArray *intersectionLines;
 @property(strong, nonatomic) NSMutableArray *outerArcs;
 @property(strong, nonatomic) NSMutableArray *regionBoundaryLines;
-// @property(strong, nonatomic) NS
+- (instancetype)initWithCircle:(GridCircle *)circle;
+- (void)resetCalculatedValues;
 @end

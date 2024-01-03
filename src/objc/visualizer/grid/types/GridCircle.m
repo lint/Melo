@@ -3,7 +3,7 @@
 
 @implementation GridCircle 
 
-- (instancetype)initWithWithIdentifier:(NSString *)ident normalizedCenter:(CGPoint)center radius:(CGFloat)radius strength:(CGFloat)strength {
+- (instancetype)initWithIdentifier:(NSString *)ident normalizedCenter:(CGPoint)center radius:(CGFloat)radius strength:(CGFloat)strength {
 
     if ((self = [super init])) {
 
